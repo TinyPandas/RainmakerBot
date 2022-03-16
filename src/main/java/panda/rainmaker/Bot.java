@@ -28,6 +28,9 @@ public class Bot {
         JDA jda = builder.build();
         jda.awaitReady();
 
+        // Empty global payload
+        jda.updateCommands().queue();
+
         Guild guild = jda.getGuildById("546033322401464320");
         if (guild == null) {
             System.err.println("Failed to fetch guild");
@@ -78,7 +81,7 @@ public class Bot {
                                     "The emote to associate with the role.")
                                     .setRequired(true)),
 
-                    Commands.slash("remote-role-from-list", "Remove a role from a list")
+                    Commands.slash("remove-role-from-list", "Remove a role from a list")
                             .addOptions(new OptionData(OptionType.STRING, "list-name",
                                     "The list to remove the role from.")
                                     .setRequired(true))

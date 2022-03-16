@@ -13,11 +13,16 @@ repositories {
         name 'm2-dv8tion'
         url 'https://m2.dv8tion.net/releases'
     }
+    maven {
+        name 'jitpack'
+        url 'https://jitpack.io'
+    }
     mavenCentral()
 }
 
 dependencies {
     implementation 'net.dv8tion:JDA:5.0.0-alpha.9'
+    implementation 'com.github.minndevelopment:emoji-java:master-SNAPSHOT'
 }
 
 compileJava.options.encoding = 'UTF-8'

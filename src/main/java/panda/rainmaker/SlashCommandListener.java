@@ -1,14 +1,13 @@
 package panda.rainmaker;
 
+import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Emote;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Role;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.util.ChannelReactionCache;
 import panda.rainmaker.util.RoleGiverCache;
 
@@ -18,7 +17,6 @@ public class SlashCommandListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        System.out.println("Event triggered.");
         if (event.getGuild() == null) {
             return;
         }
@@ -26,12 +24,12 @@ public class SlashCommandListener extends ListenerAdapter {
         switch(event.getName()) {
             case "enable-reactions":
                 TextChannel enableChannel = event.getOption("channel").getAsTextChannel();
-                String enableReaction = event.getOption("reaction").getAsString();
+                String enableReaction = event.getOption("emote").getAsString();
                 enableReaction(event, enableChannel, enableReaction);
                 break;
             case "disable-reactions":
                 TextChannel disableChannel = event.getOption("channel").getAsTextChannel();
-                OptionMapping disableReactionOption = event.getOption("reaction");
+                OptionMapping disableReactionOption = event.getOption("emote");
                 String disableReaction = null;
                 if (disableReactionOption != null) {
                     disableReaction = disableReactionOption.getAsString();
@@ -77,33 +75,30 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        String reactionId = null;
-        if (reaction.contains(":")) {
-            int index = reaction.indexOf(":", reaction.indexOf(":") + 1);
-            reactionId = reaction.substring(index + 1, reaction.length() - 1);
+        String channelId = channel.getId();
+        String channelMention = channel.getAsMention();
+
+        Guild guild = event.getGuild();
+        ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
+        if (reactionObject == null) {
+            hook.sendMessage("Failed to parse emoji/emote. Please ensure input value is correct and try again.").queue();
+            return;
         }
 
-        Emote emoteToAdd = null;
-
-        if (reactionId != null) {
-            emoteToAdd = event.getGuild().getEmoteById(reactionId);
+        String reactionValue = reactionObject.getValue();
+        ChannelReactionCache.addReactionToChannel(channelId, reactionValue);
+        if (reactionObject.isEmoji()) {
+            hook.sendMessage("Successfully enabled " + EmojiParser.parseToUnicode(reactionValue) + " in " + channelMention).queue();
         } else {
-            List<Emote> emotes = event.getGuild().getEmotesByName(reaction, true);
-            if (emotes.size() == 0) {
-                hook.sendMessage("There were no emotes associated with this name.").queue();
-                return;
-            }
+            Emote emote = guild.getEmoteById(reactionValue);
 
-            if (emotes.size() > 1) {
-                hook.sendMessage("There are too many emotes associated with this name.").queue();
-                return;
+            if (emote != null) {
+                hook.sendMessage("Successfully enabled " + emote.getAsMention() + " in " + channelMention).queue();
+            } else {
+                ChannelReactionCache.removeReactionFromChannel(channelId, reactionValue);
+                hook.sendMessage("Failed to enable" + reactionValue + " in " + channelMention + ". [Missing Emote?]").queue();
             }
-            emoteToAdd = emotes.get(0);
         }
-
-
-        ChannelReactionCache.addReactionToChannel(channel.getId(), emoteToAdd.getId());
-        hook.sendMessage("Successfully enabled " + emoteToAdd.getAsMention() + " in " + channel.getAsMention()).queue();
     }
 
     private void disableReaction(SlashCommandInteractionEvent event, TextChannel channel, String reaction) {
@@ -122,32 +117,28 @@ public class SlashCommandListener extends ListenerAdapter {
         }
 
         String channelId = channel.getId();
+        String channelMention = channel.getAsMention();
 
-        if (reaction != null) {
-            String reactionId = null;
-            if (reaction.contains(":")) {
-                int index = reaction.indexOf(":", reaction.indexOf(":") + 1);
-                reactionId = reaction.substring(index + 1, reaction.length() - 1);
-            }
-
-            Emote emoteToRemove = null;
-
-            if (reactionId != null) {
-                emoteToRemove = event.getGuild().getEmoteById(reactionId);
-            } else {
-                List<Emote> emotes = event.getGuild().getEmotesByName(reaction, true);
-                if (emotes.size() == 0) {
-                    hook.sendMessage("There were no emotes associated with this name.").queue();
-                    return;
-                }
-                emoteToRemove = emotes.get(0);
-            }
-
-            ChannelReactionCache.removeReactionFromChannel(channelId, emoteToRemove.getId());
-            hook.sendMessage("Successfully disabled " + emoteToRemove.getAsMention() + " in " + channel.getAsMention()).queue();
-        } else {
+        Guild guild = event.getGuild();
+        ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
+        if (reactionObject == null) {
             ChannelReactionCache.removeReactionsInChannel(channelId);
-            hook.sendMessage("Successfully disabled all reactions in " + channel.getAsMention()).queue();
+            hook.sendMessage("Successfully disabled all reaction events in " + channelMention + ".").queue();
+            return;
+        }
+
+        String reactionValue = reactionObject.getValue();
+        ChannelReactionCache.removeReactionFromChannel(channelId, reactionValue);
+        if (reactionObject.isEmoji()) {
+            hook.sendMessage("Successfully disabled " + EmojiParser.parseToUnicode(reactionValue) + " in " + channelMention).queue();
+        } else {
+            Emote emote = guild.getEmoteById(reactionValue);
+
+            if (emote != null) {
+                hook.sendMessage("Successfully disabled " + emote.getAsMention() + " in " + channelMention).queue();
+            } else {
+                hook.sendMessage("Forcefully disabled " + reactionValue + " in " + channelMention + ". [Missing Emote.]").queue();
+            }
         }
     }
 
@@ -160,7 +151,7 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        RoleGiverCache.setRoleChannelId(channel.getId());
+        RoleGiverCache.setRoleChannelId(channel.getGuild(), channel.getId());
         hook.sendMessage("Successfully set the role channel to " + channel.getAsMention()).queue();
     }
 
@@ -192,36 +183,41 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        String reactionId = null;
-        if (reaction.contains(":")) {
-            int index = reaction.indexOf(":", reaction.indexOf(":") + 1);
-            reactionId = reaction.substring(index + 1, reaction.length() - 1);
-        }
-
-        Emote emoteToAdd = null;
-
-        if (reactionId != null) {
-            emoteToAdd = event.getGuild().getEmoteById(reactionId);
-        } else {
-            List<Emote> emotes = event.getGuild().getEmotesByName(reaction, true);
-            if (emotes.size() == 0) {
-                hook.sendMessage("There were no emotes associated with this name.").queue();
-                return;
-            }
-
-            if (emotes.size() > 1) {
-                hook.sendMessage("There are too many emotes associated with this name.").queue();
-                return;
-            }
-            emoteToAdd = emotes.get(0);
-        }
-
-        if (emoteToAdd == null) {
-            hook.sendMessage("Are you sure that emote (" + reaction + ") is a part of this server?").queue();
+        Guild guild = event.getGuild();
+        if (!RoleGiverCache.isValidList(guild, listName)) {
+            hook.sendMessage("`" + listName + "` does not exist.").queue();
             return;
         }
 
-        RoleGiverCache.addRoleToList(event.getGuild(), listName, role.getId(), emoteToAdd.getId());
-        hook.sendMessage("Successfully added " + role.getAsMention() + " to " + listName + ".").queue();
+        ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
+        if (reactionObject == null) {
+            hook.sendMessage("Failed to parse emoji/emote. Please ensure input value is correct and try again.").queue();
+            return;
+        }
+
+        String reactionValue = reactionObject.getValue();
+        RoleGiverCache.addRoleToList(guild, listName, role.getId(), reactionValue);
+        hook.sendMessage("Successfully added " + role.getAsMention() + " to " + listName).queue();
+    }
+
+    private ReactionObject getReactionCacheValue(Guild guild, String reaction) {
+        List<String> unicodeEmojis = EmojiParser.extractEmojis(reaction);
+
+        if (unicodeEmojis.size() > 0) {
+            return new ReactionObject(true, unicodeEmojis.get(0));
+        }
+
+        if (reaction.contains(":")) {
+            int index = reaction.indexOf(":", reaction.indexOf(":") + 1);
+            String reactionId = reaction.substring(index + 1, reaction.length() - 1);
+            return new ReactionObject(false, reactionId);
+        }
+
+        List<Emote> emotes = guild.getEmotesByName(reaction, true);
+        if (emotes.size() == 0) {
+            return null;
+        }
+
+        return new ReactionObject(false, emotes.get(0).getId());
     }
 }
