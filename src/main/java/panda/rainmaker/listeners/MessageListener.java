@@ -1,4 +1,4 @@
-package panda.rainmaker;
+package panda.rainmaker.listeners;
 
 import com.vdurmont.emoji.EmojiManager;
 import net.dv8tion.jda.api.entities.*;
@@ -12,6 +12,7 @@ public class MessageListener extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
+        super.onMessageReceived(event);
         Guild guild = event.getGuild();
         Message message = event.getMessage();
         TextChannel channel = event.getTextChannel();

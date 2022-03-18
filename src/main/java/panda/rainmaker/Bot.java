@@ -13,6 +13,9 @@ import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import panda.rainmaker.listeners.MessageListener;
+import panda.rainmaker.listeners.ReactionListener;
+import panda.rainmaker.listeners.SlashCommandListener;
 
 import javax.security.auth.login.LoginException;
 import java.util.Arrays;
@@ -23,7 +26,7 @@ public class Bot {
         JDABuilder builder = JDABuilder.createDefault(token);
 
         configureMemoryUsage(builder);
-        builder.addEventListeners(new MessageListener(), new SlashCommandListener());
+        builder.addEventListeners(new MessageListener(), new SlashCommandListener(), new ReactionListener());
 
         JDA jda = builder.build();
         jda.awaitReady();
@@ -128,13 +131,13 @@ public class Bot {
             // Enable specific intents.
             .enableIntents(
                     GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                    GatewayIntent.GUILD_EMOJIS
+                    GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MESSAGE_REACTIONS
             )
             // Consider guilds with more than 50 members as "large".
             // Large guilds will only provide online members in the setup and thus reduce
             // bandwidth if chunking is disabled.
             .setLargeThreshold(50)
             // Set Activity to display the version.
-            .setActivity(Activity.playing("v0.1_alpha"));
+            .setActivity(Activity.playing("v0.2_alpha"));
     }
 }

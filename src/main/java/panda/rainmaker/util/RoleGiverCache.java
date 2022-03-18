@@ -12,6 +12,7 @@ public class RoleGiverCache {
     private static final Map<String, String> reactionToRoleMap = new HashMap<>();
     private static final Map<String, Set<String>> listToRoleMap = new HashMap<>();
     private static final Map<String, String> messageToListMap = new HashMap<>();
+    private static final Map<String, String> listToMessageMap = new HashMap<>();
     private static final Map<String, String> guildToRoleChannelMap = new HashMap<>();
 
     private static Set<String> getRolesForList(String listName) {
@@ -26,7 +27,7 @@ public class RoleGiverCache {
         } else {
             guildToRoleChannelMap.put(guildId, channelId);
         }
-        //invalidate all other data
+        //TODO: invalidate all other data
     }
 
     public static boolean isValidList(Guild guild, String listName) {
@@ -58,6 +59,7 @@ public class RoleGiverCache {
 
         channel.sendMessage("Self Assignable roles for the list: **" + listName + "**").queue(msg -> {
             messageToListMap.put(listUID, msg.getId());
+            listToMessageMap.put(msg.getId(), listUID);
         });
 
         return "Successfully create a role list with the name: " + listName;
@@ -127,6 +129,10 @@ public class RoleGiverCache {
 
         deleteMessage(guild, listName);
         listToRoleMap.remove(listUID);
+
+        String messageId = messageToListMap.remove(listUID);
+        listToMessageMap.remove(messageId);
+
         return "Successfully deleted list `" + listName + "`.";
     }
 
@@ -196,6 +202,25 @@ public class RoleGiverCache {
                 });
             }
         }
+    }
+
+    public static String getRoleIdFromEmote(String messageId, String emoteId) {
+        String listUID = listToMessageMap.get(messageId);
+
+        if (listUID != null) {
+            String reactionUID = getUID(listUID, emoteId);
+            String roleId = reactionToRoleMap.get(reactionUID);
+
+            if (roleId == null) {
+                System.out.println("No role binding found for " + reactionUID);
+            }
+
+            return roleId;
+        } else {
+            System.out.println("No list found for " + messageId + " and " + emoteId);
+        }
+
+        return null;
     }
 
     private static String getUID(Guild guild, String objectId) {

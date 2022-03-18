@@ -1,4 +1,4 @@
-package panda.rainmaker;
+package panda.rainmaker.listeners;
 
 import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.api.Permission;
@@ -17,6 +17,7 @@ public class SlashCommandListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+        super.onSlashCommandInteraction(event);
         if (event.getGuild() == null) {
             return;
         }
