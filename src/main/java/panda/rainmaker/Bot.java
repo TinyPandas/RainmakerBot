@@ -28,9 +28,6 @@ public class Bot {
         JDA jda = builder.build();
         jda.awaitReady();
 
-        // Empty global payload
-        jda.updateCommands().queue();
-
         Guild guild = jda.getGuildById("546033322401464320");
         if (guild == null) {
             System.err.println("Failed to fetch guild");
@@ -67,7 +64,12 @@ public class Bot {
 
                     Commands.slash("create-role-list", "Create a new role list.")
                             .addOptions(new OptionData(OptionType.STRING, "list-name",
-                                    "Name of the list.")
+                                    "The name of the list to create.")
+                                    .setRequired(true)),
+
+                    Commands.slash("delete-role-list", "Deletes a role list.")
+                                .addOptions(new OptionData(OptionType.STRING, "list-name",
+                                    "The name of the list to delete.")
                                     .setRequired(true)),
 
                     Commands.slash("add-role-to-list", "Add a role to the list")

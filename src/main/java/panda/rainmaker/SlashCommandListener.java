@@ -53,6 +53,11 @@ public class SlashCommandListener extends ListenerAdapter {
             case "remove-role-from-list":
                 String removeFromListName = event.getOption("list-name").getAsString();
                 Role roleToRemove = event.getOption("role").getAsRole();
+                removeRoleFromList(event, removeFromListName, roleToRemove);
+                break;
+            case "delete-role-list":
+                String deleteListName = event.getOption("list-name").getAsString();
+                deleteRoleList(event, deleteListName);
                 break;
             default:
                 System.out.println("No event for this " + event.getName());
@@ -177,12 +182,6 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        Member selfMember = event.getGuild().getSelfMember();
-        if (!selfMember.hasPermission(Permission.MANAGE_ROLES)) {
-            hook.sendMessage("I do not have permission to manage roles.").queue();
-            return;
-        }
-
         Guild guild = event.getGuild();
         if (!RoleGiverCache.isValidList(guild, listName)) {
             hook.sendMessage("`" + listName + "` does not exist.").queue();
@@ -196,8 +195,40 @@ public class SlashCommandListener extends ListenerAdapter {
         }
 
         String reactionValue = reactionObject.getValue();
-        RoleGiverCache.addRoleToList(guild, listName, role.getId(), reactionValue);
-        hook.sendMessage("Successfully added " + role.getAsMention() + " to " + listName).queue();
+        String addRoleResult = RoleGiverCache.addRoleToList(guild, listName, role, reactionValue);
+        hook.sendMessage(addRoleResult).queue();
+    }
+
+    public void removeRoleFromList(SlashCommandInteractionEvent event, String listName, Role role) {
+        event.deferReply(true).queue();
+        InteractionHook hook = event.getHook();
+        hook.setEphemeral(true);
+        if (!event.getMember().hasPermission(Permission.MANAGE_CHANNEL)) {
+            hook.sendMessage("You do not have permission to enable reactions in this channel.").queue();
+            return;
+        }
+
+        Guild guild = event.getGuild();
+        if (!RoleGiverCache.isValidList(guild, listName)) {
+            hook.sendMessage("`" + listName + "` does not exist.").queue();
+            return;
+        }
+
+        RoleGiverCache.removeRoleFromList(guild, listName, role.getId());
+        hook.sendMessage("Successfully removed " + role.getAsMention() + " from " + listName).queue();
+    }
+
+    public void deleteRoleList(SlashCommandInteractionEvent event, String listName) {
+        event.deferReply(true).queue();
+        InteractionHook hook = event.getHook();
+        hook.setEphemeral(true);
+        if (!event.getMember().hasPermission(Permission.MANAGE_CHANNEL)) {
+            hook.sendMessage("You do not have permission to enable reactions in this channel.").queue();
+            return;
+        }
+
+        String deleteResult = RoleGiverCache.deleteRoleList(event.getGuild(), listName);
+        hook.sendMessage(deleteResult).queue();
     }
 
     private ReactionObject getReactionCacheValue(Guild guild, String reaction) {
