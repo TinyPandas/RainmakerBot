@@ -1,6 +1,7 @@
 package panda.rainmaker.listeners;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -10,24 +11,28 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import panda.rainmaker.Bot;
 import panda.rainmaker.entity.ReactionObject;
+import panda.rainmaker.rda_article.ArticleResponse;
+import panda.rainmaker.rda_article.ArticleResponseItem;
 import panda.rainmaker.util.ChannelReactionCache;
+import panda.rainmaker.http.HttpRequest;
+import panda.rainmaker.http.HttpResult;
 import panda.rainmaker.util.RoleGiverCache;
 import panda.rainmaker.wiki.RecordItem;
 import panda.rainmaker.wiki.Records;
 import panda.rainmaker.wiki.RobloxResponse;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
 public class SlashCommandListener extends ListenerAdapter {
 
     private ObjectMapper objectMapper;
+
+    // TODO: Store in global settings
+    public static final String ARTICLE_ENDPOINT = "https://resources.robloxdevelopmentassistance.org/api/posts.json";
+    public static ArticleResponse articleResponse;
 
     public SlashCommandListener() {
         objectMapper = new ObjectMapper();
@@ -290,7 +295,52 @@ public class SlashCommandListener extends ListenerAdapter {
     }
 
     public void findArticle(SlashCommandInteractionEvent event, String titleQuery, String authorQuery) {
+        HttpResult result = HttpRequest.getResult(ARTICLE_ENDPOINT, 0, 0);
+        if (result.isFailed()) {
+            articleResponse = null;
+            System.out.println("Failed to parse articles.");
+        }
 
+        if (articleResponse == null) {
+            try {
+                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<List<ArticleResponseItem>>() {
+                });
+                System.out.println("Loaded " + items.size() + " articles.");
+                articleResponse = new ArticleResponse();
+                articleResponse.setArticleResponse(items);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+                event.reply("Failed to parse articles.").queue();
+                return;
+            }
+        }
+
+        List<ArticleResponseItem> queryResults = articleResponse.getArticlesFromQuery(titleQuery, authorQuery);
+        if (queryResults == null) {
+            event.reply("Articles were not loaded correctly.").queue();
+            return;
+        }
+        if (queryResults.size() == 0) {
+            event.reply("There were no results. [" + articleResponse.getArticleResponse().size()
+                    + " articles searched.]").queue();
+            return;
+        }
+
+        Member member = event.getMember();
+        String author = member != null ? member.getEffectiveName() : event.getUser().getName();
+
+        EmbedBuilder builder = new EmbedBuilder();
+        builder.setTitle("Results for " + titleQuery);
+        builder.setDescription(author);
+
+        for (ArticleResponseItem item : queryResults) {
+            builder.addField(
+                    String.format("%s - by %s", item.getTitle(), item.getAuthor()),
+                    String.format("[Link to Article](https://resources.robloxdevelopmentassistance.org%s)%n%s", item.getUrl(), item.getExcerpt()),
+                    false);
+        }
+
+        event.replyEmbeds(builder.build()).queue();
     }
 
     public void searchWiki(SlashCommandInteractionEvent event, String searchQuery, String category) {
@@ -302,41 +352,16 @@ public class SlashCommandListener extends ListenerAdapter {
             String urlQuery = searchQuery.replaceAll("\\s", "%20");
             String call = wikiPrefix + urlQuery + wikiSuffix;
 
-            String result;
-
-            try {
-                URL url = new URL(call);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-
-                int responseCode = connection.getResponseCode();
-
-                if (responseCode != 200) {
-                    msg.editOriginal("Response Code: " + responseCode).queue();
-                    return;
-                } else {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    String inputLine;
-                    StringBuilder response = new StringBuilder();
-
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    in.close();
-
-                    String responseString = response.toString();
-                    result = responseString.substring(45, responseString.length() - 1);
-                }
-            } catch (IOException e) {
-                msg.editOriginal(e.getMessage()).queue();
-                e.printStackTrace();
+            HttpResult result = HttpRequest.getResult(call, 45, 1);
+            if (result.isFailed()) {
+                msg.editOriginal(result.getMessage()).queue();
                 return;
             }
 
             RobloxResponse robloxResult;
 
             try {
-                robloxResult = objectMapper.readValue(result, RobloxResponse.class);
+                robloxResult = objectMapper.readValue(result.getMessage(), RobloxResponse.class);
             } catch (JsonProcessingException e) {
                 msg.editOriginal("Failed to parse results. [" + e.getMessage() + "]").queue();
                 e.printStackTrace();
