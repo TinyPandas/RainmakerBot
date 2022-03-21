@@ -23,6 +23,7 @@ repositories {
 dependencies {
     implementation 'net.dv8tion:JDA:5.0.0-alpha.9'
     implementation 'com.github.minndevelopment:emoji-java:master-SNAPSHOT'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2'
 }
 
 compileJava.options.encoding = 'UTF-8'

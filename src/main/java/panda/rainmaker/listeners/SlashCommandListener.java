@@ -1,6 +1,9 @@
 package panda.rainmaker.listeners;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vdurmont.emoji.EmojiParser;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -10,10 +13,25 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.util.ChannelReactionCache;
 import panda.rainmaker.util.RoleGiverCache;
+import panda.rainmaker.wiki.RecordItem;
+import panda.rainmaker.wiki.Records;
+import panda.rainmaker.wiki.RobloxResponse;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 public class SlashCommandListener extends ListenerAdapter {
+
+    private ObjectMapper objectMapper;
+
+    public SlashCommandListener() {
+        objectMapper = new ObjectMapper();
+    }
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
@@ -59,6 +77,24 @@ public class SlashCommandListener extends ListenerAdapter {
             case "delete-role-list":
                 String deleteListName = event.getOption("list-name").getAsString();
                 deleteRoleList(event, deleteListName);
+                break;
+            case "article":
+                String titleQuery = event.getOption("title").getAsString();
+                OptionMapping authorQueryOption = event.getOption("author");
+                String authorQuery = null;
+                if (authorQueryOption != null) {
+                    authorQuery = authorQueryOption.getAsString();
+                }
+                findArticle(event, titleQuery, authorQuery);
+                break;
+            case "wiki":
+                String searchQuery = event.getOption("query").getAsString();
+                String category = null;
+                OptionMapping categoryOption = event.getOption("category");
+                if (categoryOption != null) {
+                    category = categoryOption.getAsString();
+                }
+                searchWiki(event, searchQuery, category);
                 break;
             default:
                 System.out.println("No event for this " + event.getName());
@@ -251,5 +287,119 @@ public class SlashCommandListener extends ListenerAdapter {
         }
 
         return new ReactionObject(false, emotes.get(0).getId());
+    }
+
+    public void findArticle(SlashCommandInteractionEvent event, String titleQuery, String authorQuery) {
+
+    }
+
+    public void searchWiki(SlashCommandInteractionEvent event, String searchQuery, String category) {
+        // TODO: Store in global settings
+        String wikiPrefix = "https://api.swiftype.com/api/v1/public/engines/search.json?callback=jQuery33104738122062067418_1647795735305&q=";
+        String wikiSuffix = "&engine_key=ybGG5yhKbpKUQQW4Dwrw&fetch_fields%5Bapi-reference%5D%5B%5D=display_title&fetch_fields%5Bapi-reference%5D%5B%5D=hide_from_search&fetch_fields%5Bapi-reference%5D%5B%5D=category&fetch_fields%5Bapi-reference%5D%5B%5D=url&fetch_fields%5Bapi-reference%5D%5B%5D=segment&fetch_fields%5Bapi-reference%5D%5B%5D=summary&fetch_fields%5Bapi-reference%5D%5B%5D=api_type&fetch_fields%5Barticles%5D%5B%5D=display_title&fetch_fields%5Barticles%5D%5B%5D=hide_from_search&fetch_fields%5Barticles%5D%5B%5D=category&fetch_fields%5Barticles%5D%5B%5D=url&fetch_fields%5Barticles%5D%5B%5D=segment&fetch_fields%5Barticles%5D%5B%5D=summary&fetch_fields%5Barticles%5D%5B%5D=api_type&fetch_fields%5Brecipes%5D%5B%5D=display_title&fetch_fields%5Brecipes%5D%5B%5D=hide_from_search&fetch_fields%5Brecipes%5D%5B%5D=category&fetch_fields%5Brecipes%5D%5B%5D=url&fetch_fields%5Brecipes%5D%5B%5D=segment&fetch_fields%5Brecipes%5D%5B%5D=summary&fetch_fields%5Brecipes%5D%5B%5D=api_type&fetch_fields%5Bvideos%5D%5B%5D=display_title&fetch_fields%5Bvideos%5D%5B%5D=hide_from_search&fetch_fields%5Bvideos%5D%5B%5D=category&fetch_fields%5Bvideos%5D%5B%5D=url&fetch_fields%5Bvideos%5D%5B%5D=segment&fetch_fields%5Bvideos%5D%5B%5D=summary&fetch_fields%5Bvideos%5D%5B%5D=api_type&filters%5Bapi-reference%5D%5Blocale%5D=en-us&filters%5Barticles%5D%5Blocale%5D=en-us&filters%5Brecipes%5D%5Blocale%5D=en-us&filters%5Bvideos%5D%5Blocale%5D=en-us&per_page=10&highlight_fields%5Bapi-reference%5D%5Bbody%5D%5Bfallback%5D=false&highlight_fields%5Barticles%5D%5Bbody%5D%5Bfallback%5D=false&highlight_fields%5Brecipes%5D%5Bbody%5D%5Bfallback%5D=false&highlight_fields%5Bvideos%5D%5Bbody%5D%5Bfallback%5D=false&spelling=retry&_=1647795735313";
+
+        event.reply("Searching...").queue(msg -> {
+            String urlQuery = searchQuery.replaceAll("\\s", "%20");
+            String call = wikiPrefix + urlQuery + wikiSuffix;
+
+            String result;
+
+            try {
+                URL url = new URL(call);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+
+                int responseCode = connection.getResponseCode();
+
+                if (responseCode != 200) {
+                    msg.editOriginal("Response Code: " + responseCode).queue();
+                    return;
+                } else {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                    String inputLine;
+                    StringBuilder response = new StringBuilder();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                    String responseString = response.toString();
+                    result = responseString.substring(45, responseString.length() - 1);
+                }
+            } catch (IOException e) {
+                msg.editOriginal(e.getMessage()).queue();
+                e.printStackTrace();
+                return;
+            }
+
+            RobloxResponse robloxResult;
+
+            try {
+                robloxResult = objectMapper.readValue(result, RobloxResponse.class);
+            } catch (JsonProcessingException e) {
+                msg.editOriginal("Failed to parse results. [" + e.getMessage() + "]").queue();
+                e.printStackTrace();
+                return;
+            }
+
+            if (robloxResult.getRecordCount() > 0) {
+                Records records = robloxResult.getRecords();
+                Member member = event.getMember();
+
+                EmbedBuilder builder = new EmbedBuilder();
+                builder.setTitle("Results for " + searchQuery);
+                builder.setDescription(member != null ? member.getEffectiveName() : event.getUser().getName());
+
+                if (category == null || category.length() == 0) {
+                    Map<String, RecordItem> resultList = records.getFirstOfEach();
+
+                    for (Map.Entry<String, RecordItem> recordItem : resultList.entrySet()) {
+                        RecordItem recordObject = recordItem.getValue();
+                        String summary = recordObject.getSummary().replaceAll("\\<.*?\\>", "");
+                        String url = recordObject.getUrl();
+
+                        if (summary.length() == 0) {
+                            summary = recordObject.getHighlight().getBody();
+                            if (summary == null || summary.length() == 0) {
+                                summary = "Link to Documentation";
+                            } else {
+                                summary = summary.replaceAll("\\<.*?\\>", "");
+                            }
+                        }
+
+                        String display = String.format("[%s](%s)", summary, url);
+
+                        builder.addField(String.format("[%s]: %s", recordItem.getKey(), recordObject.getDisplayTitle()),
+                                display, false);
+                    }
+                } else {
+                    List<RecordItem> categoryList = records.getCategory(category);
+
+                    for (RecordItem recordItem : categoryList) {
+                        String summary = recordItem.getSummary().replaceAll("\\<.*?\\>", "");
+                        String url = recordItem.getUrl();
+
+                        if (summary.length() == 0) {
+                            summary = recordItem.getHighlight().getBody();
+                            if (summary == null || summary.length() == 0) {
+                                summary = "Link to Documentation";
+                            } else {
+                                summary = summary.replaceAll("\\<.*?\\>", "");
+                            }
+                        }
+
+                        String display = String.format("[%s](%s)", summary, url);
+
+                        builder.addField(String.format("[%s]: %s", category, recordItem.getDisplayTitle()),
+                                display, false);
+                    }
+                }
+
+                msg.editOriginalEmbeds(builder.build()).setContent("").queue();
+            } else {
+                msg.editOriginal("No results found.").queue();
+            }
+        });
     }
 }
