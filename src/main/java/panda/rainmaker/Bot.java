@@ -1,7 +1,5 @@
 package panda.rainmaker;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -15,17 +13,12 @@ import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import panda.rainmaker.http.HttpRequest;
-import panda.rainmaker.http.HttpResult;
 import panda.rainmaker.listeners.MessageListener;
 import panda.rainmaker.listeners.ReactionListener;
 import panda.rainmaker.listeners.SlashCommandListener;
-import panda.rainmaker.rda_article.ArticleResponse;
-import panda.rainmaker.rda_article.ArticleResponseItem;
 
 import javax.security.auth.login.LoginException;
 import java.util.Arrays;
-import java.util.List;
 
 public class Bot {
 
