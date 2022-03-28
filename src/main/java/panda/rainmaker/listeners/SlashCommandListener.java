@@ -11,7 +11,11 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-import panda.rainmaker.Bot;
+import org.jetbrains.annotations.NotNull;
+import panda.rainmaker.database.GlobalDao;
+import panda.rainmaker.database.GuildDao;
+import panda.rainmaker.database.models.GlobalSettings;
+import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.rda_article.ArticleResponse;
 import panda.rainmaker.rda_article.ArticleResponseItem;
@@ -28,28 +32,37 @@ import java.util.Map;
 
 public class SlashCommandListener extends ListenerAdapter {
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    // TODO: Store in global settings
-    public static final String ARTICLE_ENDPOINT = "https://resources.robloxdevelopmentassistance.org/api/posts.json";
+    private static GlobalSettings globalSettings;
     public static ArticleResponse articleResponse;
 
     public SlashCommandListener() {
         objectMapper = new ObjectMapper();
+        globalSettings = GlobalDao.retrieveGlobalSettings();
+        if (globalSettings == null) {
+            globalSettings = GlobalDao.loadDefaults();
+        }
     }
 
     @Override
-    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
+    public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         super.onSlashCommandInteraction(event);
         if (event.getGuild() == null) {
             return;
+        }
+
+        String guildId = event.getGuild().getId();
+        GuildSettings guildSettings = GuildDao.fetchGuildSettings(guildId);
+        if (guildSettings == null) {
+            guildSettings = GuildDao.loadDefaults(guildId);
         }
 
         switch(event.getName()) {
             case "enable-reactions":
                 TextChannel enableChannel = event.getOption("channel").getAsTextChannel();
                 String enableReaction = event.getOption("emote").getAsString();
-                enableReaction(event, enableChannel, enableReaction);
+                enableReaction(event, guildSettings, enableChannel, enableReaction);
                 break;
             case "disable-reactions":
                 TextChannel disableChannel = event.getOption("channel").getAsTextChannel();
@@ -58,30 +71,30 @@ public class SlashCommandListener extends ListenerAdapter {
                 if (disableReactionOption != null) {
                     disableReaction = disableReactionOption.getAsString();
                 }
-                disableReaction(event, disableChannel, disableReaction);
+                disableReaction(event, guildSettings, disableChannel, disableReaction);
                 break;
             case "set-role-channel":
                 TextChannel channel = event.getOption("channel").getAsTextChannel();
-                setRoleChannel(event, channel);
+                setRoleChannel(event, guildSettings, channel);
                 break;
             case "create-role-list":
                 String newListName = event.getOption("list-name").getAsString();
-                createRoleList(event, newListName);
+                createRoleList(event, guildSettings, newListName);
                 break;
             case "add-role-to-list":
                 String addToListName = event.getOption("list-name").getAsString();
                 Role roleToAdd = event.getOption("role").getAsRole();
                 String emote = event.getOption("emote").getAsString();
-                addRoleToList(event, addToListName, roleToAdd, emote);
+                addRoleToList(event, guildSettings, addToListName, roleToAdd, emote);
                 break;
             case "remove-role-from-list":
                 String removeFromListName = event.getOption("list-name").getAsString();
                 Role roleToRemove = event.getOption("role").getAsRole();
-                removeRoleFromList(event, removeFromListName, roleToRemove);
+                removeRoleFromList(event, guildSettings, removeFromListName, roleToRemove);
                 break;
             case "delete-role-list":
                 String deleteListName = event.getOption("list-name").getAsString();
-                deleteRoleList(event, deleteListName);
+                deleteRoleList(event, guildSettings, deleteListName);
                 break;
             case "article":
                 String titleQuery = event.getOption("title").getAsString();
@@ -107,7 +120,7 @@ public class SlashCommandListener extends ListenerAdapter {
         }
     }
 
-    private void enableReaction(SlashCommandInteractionEvent event, TextChannel channel, String reaction) {
+    private void enableReaction(SlashCommandInteractionEvent event, GuildSettings guildSettings, TextChannel channel, String reaction) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -148,7 +161,7 @@ public class SlashCommandListener extends ListenerAdapter {
         }
     }
 
-    private void disableReaction(SlashCommandInteractionEvent event, TextChannel channel, String reaction) {
+    private void disableReaction(SlashCommandInteractionEvent event, GuildSettings guildSettings, TextChannel channel, String reaction) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -189,7 +202,7 @@ public class SlashCommandListener extends ListenerAdapter {
         }
     }
 
-    public void setRoleChannel(SlashCommandInteractionEvent event, TextChannel channel) {
+    public void setRoleChannel(SlashCommandInteractionEvent event, GuildSettings guildSettings, TextChannel channel) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -198,11 +211,11 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        RoleGiverCache.setRoleChannelId(channel.getGuild(), channel.getId());
+        RoleGiverCache.setRoleChannelId(guildSettings, channel.getId());
         hook.sendMessage("Successfully set the role channel to " + channel.getAsMention()).queue();
     }
 
-    public void createRoleList(SlashCommandInteractionEvent event, String listName) {
+    public void createRoleList(SlashCommandInteractionEvent event, GuildSettings guildSettings, String listName) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -211,11 +224,11 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        String createResult = RoleGiverCache.createList(event.getGuild(), listName);
+        String createResult = RoleGiverCache.createList(guildSettings, event.getGuild(), listName);
         hook.sendMessage(createResult).queue();
     }
 
-    public void addRoleToList(SlashCommandInteractionEvent event, String listName, Role role, String reaction) {
+    public void addRoleToList(SlashCommandInteractionEvent event, GuildSettings guildSettings, String listName, Role role, String reaction) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -225,7 +238,7 @@ public class SlashCommandListener extends ListenerAdapter {
         }
 
         Guild guild = event.getGuild();
-        if (!RoleGiverCache.isValidList(guild, listName)) {
+        if (RoleGiverCache.isInvalidList(guildSettings, guild, listName)) {
             hook.sendMessage("`" + listName + "` does not exist.").queue();
             return;
         }
@@ -237,11 +250,11 @@ public class SlashCommandListener extends ListenerAdapter {
         }
 
         String reactionValue = reactionObject.getValue();
-        String addRoleResult = RoleGiverCache.addRoleToList(guild, listName, role, reactionValue);
+        String addRoleResult = RoleGiverCache.addRoleToList(guildSettings, guild, listName, role, reactionValue);
         hook.sendMessage(addRoleResult).queue();
     }
 
-    public void removeRoleFromList(SlashCommandInteractionEvent event, String listName, Role role) {
+    public void removeRoleFromList(SlashCommandInteractionEvent event, GuildSettings guildSettings, String listName, Role role) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -251,16 +264,16 @@ public class SlashCommandListener extends ListenerAdapter {
         }
 
         Guild guild = event.getGuild();
-        if (!RoleGiverCache.isValidList(guild, listName)) {
+        if (RoleGiverCache.isInvalidList(guildSettings, guild, listName)) {
             hook.sendMessage("`" + listName + "` does not exist.").queue();
             return;
         }
 
-        RoleGiverCache.removeRoleFromList(guild, listName, role.getId());
+        RoleGiverCache.removeRoleFromList(guildSettings, guild, listName, role.getId());
         hook.sendMessage("Successfully removed " + role.getAsMention() + " from " + listName).queue();
     }
 
-    public void deleteRoleList(SlashCommandInteractionEvent event, String listName) {
+    public void deleteRoleList(SlashCommandInteractionEvent event, GuildSettings guildSettings, String listName) {
         event.deferReply(true).queue();
         InteractionHook hook = event.getHook();
         hook.setEphemeral(true);
@@ -269,7 +282,7 @@ public class SlashCommandListener extends ListenerAdapter {
             return;
         }
 
-        String deleteResult = RoleGiverCache.deleteRoleList(event.getGuild(), listName);
+        String deleteResult = RoleGiverCache.deleteRoleList(guildSettings, event.getGuild(), listName);
         hook.sendMessage(deleteResult).queue();
     }
 
@@ -295,7 +308,7 @@ public class SlashCommandListener extends ListenerAdapter {
     }
 
     public void findArticle(SlashCommandInteractionEvent event, String titleQuery, String authorQuery) {
-        HttpResult result = HttpRequest.getResult(ARTICLE_ENDPOINT, 0, 0);
+        HttpResult result = HttpRequest.getResult(globalSettings.getRsa_link(), 0, 0);
         if (result.isFailed()) {
             articleResponse = null;
             System.out.println("Failed to parse articles.");
@@ -303,8 +316,7 @@ public class SlashCommandListener extends ListenerAdapter {
 
         if (articleResponse == null) {
             try {
-                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<List<ArticleResponseItem>>() {
-                });
+                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<List<ArticleResponseItem>>() { });
                 System.out.println("Loaded " + items.size() + " articles.");
                 articleResponse = new ArticleResponse();
                 articleResponse.setArticleResponse(items);
@@ -344,13 +356,9 @@ public class SlashCommandListener extends ListenerAdapter {
     }
 
     public void searchWiki(SlashCommandInteractionEvent event, String searchQuery, String category) {
-        // TODO: Store in global settings
-        String wikiPrefix = "https://api.swiftype.com/api/v1/public/engines/search.json?callback=jQuery33104738122062067418_1647795735305&q=";
-        String wikiSuffix = "&engine_key=ybGG5yhKbpKUQQW4Dwrw&fetch_fields%5Bapi-reference%5D%5B%5D=display_title&fetch_fields%5Bapi-reference%5D%5B%5D=hide_from_search&fetch_fields%5Bapi-reference%5D%5B%5D=category&fetch_fields%5Bapi-reference%5D%5B%5D=url&fetch_fields%5Bapi-reference%5D%5B%5D=segment&fetch_fields%5Bapi-reference%5D%5B%5D=summary&fetch_fields%5Bapi-reference%5D%5B%5D=api_type&fetch_fields%5Barticles%5D%5B%5D=display_title&fetch_fields%5Barticles%5D%5B%5D=hide_from_search&fetch_fields%5Barticles%5D%5B%5D=category&fetch_fields%5Barticles%5D%5B%5D=url&fetch_fields%5Barticles%5D%5B%5D=segment&fetch_fields%5Barticles%5D%5B%5D=summary&fetch_fields%5Barticles%5D%5B%5D=api_type&fetch_fields%5Brecipes%5D%5B%5D=display_title&fetch_fields%5Brecipes%5D%5B%5D=hide_from_search&fetch_fields%5Brecipes%5D%5B%5D=category&fetch_fields%5Brecipes%5D%5B%5D=url&fetch_fields%5Brecipes%5D%5B%5D=segment&fetch_fields%5Brecipes%5D%5B%5D=summary&fetch_fields%5Brecipes%5D%5B%5D=api_type&fetch_fields%5Bvideos%5D%5B%5D=display_title&fetch_fields%5Bvideos%5D%5B%5D=hide_from_search&fetch_fields%5Bvideos%5D%5B%5D=category&fetch_fields%5Bvideos%5D%5B%5D=url&fetch_fields%5Bvideos%5D%5B%5D=segment&fetch_fields%5Bvideos%5D%5B%5D=summary&fetch_fields%5Bvideos%5D%5B%5D=api_type&filters%5Bapi-reference%5D%5Blocale%5D=en-us&filters%5Barticles%5D%5Blocale%5D=en-us&filters%5Brecipes%5D%5Blocale%5D=en-us&filters%5Bvideos%5D%5Blocale%5D=en-us&per_page=10&highlight_fields%5Bapi-reference%5D%5Bbody%5D%5Bfallback%5D=false&highlight_fields%5Barticles%5D%5Bbody%5D%5Bfallback%5D=false&highlight_fields%5Brecipes%5D%5Bbody%5D%5Bfallback%5D=false&highlight_fields%5Bvideos%5D%5Bbody%5D%5Bfallback%5D=false&spelling=retry&_=1647795735313";
-
         event.reply("Searching...").queue(msg -> {
             String urlQuery = searchQuery.replaceAll("\\s", "%20");
-            String call = wikiPrefix + urlQuery + wikiSuffix;
+            String call = globalSettings.getWiki_prefix() + urlQuery + globalSettings.getWiki_suffix();
 
             HttpResult result = HttpRequest.getResult(call, 45, 1);
             if (result.isFailed()) {

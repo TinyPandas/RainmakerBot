@@ -3,53 +3,48 @@ package panda.rainmaker.util;
 import com.vdurmont.emoji.EmojiManager;
 import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.api.entities.*;
+import panda.rainmaker.database.GuildDao;
+import panda.rainmaker.database.models.GuildSettings;
 
 import java.util.*;
 
 public class RoleGiverCache {
 
-    private static final Map<String, String> roleToReactionMap = new HashMap<>();
-    private static final Map<String, String> reactionToRoleMap = new HashMap<>();
-    private static final Map<String, Set<String>> listToRoleMap = new HashMap<>();
-    private static final Map<String, String> messageToListMap = new HashMap<>();
-    private static final Map<String, String> listToMessageMap = new HashMap<>();
-    private static final Map<String, String> guildToRoleChannelMap = new HashMap<>();
+    //private static final Map<String, String> roleToReactionMap = new HashMap<>();
 
-    private static Set<String> getRolesForList(String listName) {
+    private static Set<String> getRolesForList(GuildSettings guildSettings, String listName) {
         System.out.println("Getting roles for " + listName);
-        return listToRoleMap.getOrDefault(listName, new HashSet<>());
+        return guildSettings.getListToRoleMap().getOrDefault(listName, new HashSet<>());
     }
 
-    public static void setRoleChannelId(Guild guild, String channelId) {
-        String guildId = guild.getId();
-        if (guildToRoleChannelMap.containsKey(guildId)) {
-            guildToRoleChannelMap.replace(guildId, channelId);
-        } else {
-            guildToRoleChannelMap.put(guildId, channelId);
-        }
-        //TODO: invalidate all other data
+    public static void setRoleChannelId(GuildSettings guildSettings, String channelId) {
+        guildSettings.setRoleChannelId(channelId);
+        GuildDao.saveGuildSettings(guildSettings);
     }
 
-    public static boolean isValidList(Guild guild, String listName) {
+    public static boolean isInvalidList(GuildSettings guildSettings, Guild guild, String listName) {
         System.out.println("Validating: " + listName + " [" + getUID(guild, listName) + "]");
-        return listToRoleMap.containsKey(getUID(guild, listName));
+        return !guildSettings.getListToRoleMap().containsKey(getUID(guild, listName));
     }
 
-    public static String createList(Guild guild, String listName) {
-        if (!guildToRoleChannelMap.containsKey(guild.getId())) {
+    public static String createList(GuildSettings guildSettings, Guild guild, String listName) {
+        if (guildSettings.getRoleChannelId() == null) {
             return "No role channel has been set. Please use `/set-role-channel` and try again.";
         }
 
         String listUID = getUID(guild, listName);
 
-        if (listToRoleMap.containsKey(listUID)) {
+        if (guildSettings.getListToRoleMap().containsKey(listUID)) {
             return "A list with the name: " + listName + " already exists.";
         }
 
-        listToRoleMap.put(listUID, getRolesForList(listUID));
+        Map<String, Set<String>> listToRoleMap = guildSettings.getListToRoleMap();
+        listToRoleMap.put(listUID, getRolesForList(guildSettings, listUID));
+        guildSettings.setListToRoleMap(listToRoleMap);
+
         System.out.println("Created a role list named: " + listUID);
 
-        String roleChannelId = guildToRoleChannelMap.get(guild.getId());
+        String roleChannelId = guildSettings.getRoleChannelId();
 
         // send a new message with list name
         TextChannel channel = guild.getTextChannelById(roleChannelId);
@@ -58,17 +53,27 @@ public class RoleGiverCache {
         }
 
         channel.sendMessage("Self Assignable roles for the list: **" + listName + "**").queue(msg -> {
+            Map<String, String> messageToListMap = guildSettings.getMessageToListMap();
             messageToListMap.put(listUID, msg.getId());
+            guildSettings.setMessageToListMap(messageToListMap);
+
+            Map<String, String> listToMessageMap = guildSettings.getListToMessageMap();
             listToMessageMap.put(msg.getId(), listUID);
+            guildSettings.setListToMessageMap(listToMessageMap);
+
+            GuildDao.saveGuildSettings(guildSettings);
         });
 
         return "Successfully create a role list with the name: " + listName;
     }
 
-    public static String addRoleToList(Guild guild, String listName, Role role, String reactionId) {
+    public static String addRoleToList(GuildSettings guildSettings, Guild guild, String listName, Role role, String reactionId) {
         String roleId = role.getId();
         String reactionUID = getUID(guild, getUID(listName, reactionId));
         String roleUID = getUID(guild, roleId);
+
+        Map<String, String> reactionToRoleMap = guildSettings.getReactionToRoleMap();
+        Map<String, String> roleToReactionMap = guildSettings.getRoleToReactionMap();
 
         if (reactionToRoleMap.containsKey(reactionUID)) {
             return "Failed to add " + role.getAsMention() + ", emote/emoji already bound.";
@@ -79,69 +84,92 @@ public class RoleGiverCache {
         }
 
         reactionToRoleMap.put(reactionUID, roleId);
+        guildSettings.setReactionToRoleMap(reactionToRoleMap);
+
         roleToReactionMap.put(roleUID, reactionId);
+        guildSettings.setRoleToReactionMap(roleToReactionMap);
+
         String listUID = getUID(guild, listName);
-        Set<String> roleList = getRolesForList(listUID);
+        Set<String> roleList = getRolesForList(guildSettings, listUID);
         roleList.add(roleId);
-        if (listToRoleMap.containsKey(listUID)) {
-            listToRoleMap.replace(listUID, roleList);
+        if (guildSettings.getListToRoleMap().containsKey(listUID)) {
+            guildSettings.getListToRoleMap().replace(listUID, roleList);
         } else {
-            listToRoleMap.put(listUID, roleList);
+            guildSettings.getListToRoleMap().put(listUID, roleList);
         }
 
-        updateMessage(guild, listName);
+        GuildDao.saveGuildSettings(guildSettings);
+        updateMessage(guildSettings, guild, listName);
         return "Successfully added " + role.getAsMention() + " to " + listName;
     }
 
-    public static void removeRoleFromList(Guild guild, String listName, String roleId) {
+    public static void removeRoleFromList(GuildSettings guildSettings, Guild guild, String listName, String roleId) {
+        Map<String, String> roleToReactionMap = guildSettings.getRoleToReactionMap();
         String reactionId = roleToReactionMap.remove(getUID(guild, roleId));
+        guildSettings.setRoleToReactionMap(roleToReactionMap);
+
+        Map<String, String> reactionToRoleMap = guildSettings.getReactionToRoleMap();
         reactionToRoleMap.remove(getUID(guild, getUID(listName, reactionId)));
+        guildSettings.setReactionToRoleMap(reactionToRoleMap);
+
         String listUID = getUID(guild, listName);
-        Set<String> roleList = getRolesForList(listUID);
+        Set<String> roleList = getRolesForList(guildSettings, listUID);
         roleList.remove(roleId);
 
-        if (listToRoleMap.containsKey(listUID)) {
-            listToRoleMap.replace(listUID, roleList);
+        if (guildSettings.getListToRoleMap().containsKey(listUID)) {
+            guildSettings.getListToRoleMap().replace(listUID, roleList);
         } else {
-            listToRoleMap.put(listUID, roleList);
+            guildSettings.getListToRoleMap().put(listUID, roleList);
         }
 
-        updateMessage(guild, listName);
+        GuildDao.saveGuildSettings(guildSettings);
+        updateMessage(guildSettings, guild, listName);
     }
 
-    public static String deleteRoleList(Guild guild, String listName) {
-        if (!guildToRoleChannelMap.containsKey(guild.getId())) {
+    public static String deleteRoleList(GuildSettings guildSettings, Guild guild, String listName) {
+        if (guildSettings.getRoleChannelId() == null) {
             return "No role channel has been set. Please use `/set-role-channel` and try again.";
         }
 
         String listUID = getUID(guild, listName);
 
-        if (!listToRoleMap.containsKey(listUID)) {
+        if (!guildSettings.getListToRoleMap().containsKey(listUID)) {
             return "A list with the name: " + listName + " does not exist.";
         }
 
-        Set<String> roleList = getRolesForList(listUID);
+        Set<String> roleList = getRolesForList(guildSettings, listUID);
+        Map<String, String> reactionToRoleMap = guildSettings.getReactionToRoleMap();
+        Map<String, String> roleToReactionMap = guildSettings.getRoleToReactionMap();
 
         for (String roleId : roleList) {
             String reactionId = roleToReactionMap.remove(getUID(guild, roleId));
+            guildSettings.setRoleToReactionMap(roleToReactionMap);
+
             reactionToRoleMap.remove(getUID(guild, getUID(listName, reactionId)));
+            guildSettings.setReactionToRoleMap(reactionToRoleMap);
         }
 
-        deleteMessage(guild, listName);
-        listToRoleMap.remove(listUID);
+        deleteMessage(guildSettings, guild, listName);
+        guildSettings.getListToRoleMap().remove(listUID);
 
+        Map<String, String> messageToListMap = guildSettings.getMessageToListMap();
         String messageId = messageToListMap.remove(listUID);
-        listToMessageMap.remove(messageId);
+        guildSettings.setMessageToListMap(messageToListMap);
 
+        Map<String, String> listToMessageMap = guildSettings.getListToMessageMap();
+        listToMessageMap.remove(messageId);
+        guildSettings.setListToMessageMap(listToMessageMap);
+
+        GuildDao.saveGuildSettings(guildSettings);
         return "Successfully deleted list `" + listName + "`.";
     }
 
-    private static void updateMessage(Guild guild, String listName) {
+    private static void updateMessage(GuildSettings guildSettings, Guild guild, String listName) {
         String listUID = getUID(guild, listName);
-        String roleChannelId = guildToRoleChannelMap.get(guild.getId());
+        String roleChannelId = guildSettings.getRoleChannelId();
         TextChannel channel = guild.getTextChannelById(roleChannelId);
         if (channel != null) {
-            String messageId = messageToListMap.get(listUID);
+            String messageId = guildSettings.getMessageToListMap().get(listUID);
             if (messageId != null) {
                 channel.retrieveMessageById(messageId).queue(msg -> {
                     StringBuilder builder = new StringBuilder();
@@ -149,10 +177,10 @@ public class RoleGiverCache {
                     builder.append(listName);
                     builder.append("**:\n");
 
-                    Set<String> roleList = getRolesForList(listUID);
+                    Set<String> roleList = getRolesForList(guildSettings, listUID);
 
                     for (String roleId : roleList) {
-                        String reactionId = roleToReactionMap.get(getUID(guild, roleId));
+                        String reactionId = guildSettings.getRoleToReactionMap().get(getUID(guild, roleId));
                         System.out.println("RID: " + reactionId);
                         Role role = guild.getRoleById(roleId);
                         boolean isEmoji = EmojiManager.isEmoji(reactionId);
@@ -167,7 +195,7 @@ public class RoleGiverCache {
                                 msg.addReaction(reactionId).queue();
                             }
                         } else {
-                            Emote emote = guild.getEmoteById(reactionId);
+                            Emote emote = guild.getJDA().getEmoteById(reactionId);
 
                             builder.append(emote.getAsMention());
 
@@ -190,26 +218,24 @@ public class RoleGiverCache {
         }
     }
 
-    private static void deleteMessage(Guild guild, String listName) {
+    private static void deleteMessage(GuildSettings guildSettings, Guild guild, String listName) {
         String listUID = getUID(guild, listName);
-        String roleChannelId = guildToRoleChannelMap.get(guild.getId());
+        String roleChannelId = guildSettings.getRoleChannelId();
         TextChannel channel = guild.getTextChannelById(roleChannelId);
         if (channel != null) {
-            String messageId = messageToListMap.get(listUID);
+            String messageId = guildSettings.getMessageToListMap().get(listUID);
             if (messageId != null) {
-                channel.retrieveMessageById(messageId).queue(msg -> {
-                   msg.delete().queue();
-                });
+                channel.retrieveMessageById(messageId).queue(msg -> msg.delete().queue());
             }
         }
     }
 
-    public static String getRoleIdFromEmote(String messageId, String emoteId) {
-        String listUID = listToMessageMap.get(messageId);
+    public static String getRoleIdFromEmote(GuildSettings guildSettings, String messageId, String emoteId) {
+        String listUID = guildSettings.getListToMessageMap().get(messageId);
 
         if (listUID != null) {
             String reactionUID = getUID(listUID, emoteId);
-            String roleId = reactionToRoleMap.get(reactionUID);
+            String roleId = guildSettings.getReactionToRoleMap().get(reactionUID);
 
             if (roleId == null) {
                 System.out.println("No role binding found for " + reactionUID);
