@@ -3,19 +3,18 @@ package panda.rainmaker;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.interactions.commands.build.Commands;
-import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.jetbrains.annotations.NotNull;
+import panda.rainmaker.command.CommandObject;
+import panda.rainmaker.command.Commands;
 import panda.rainmaker.entity.BotMongoClient;
 import panda.rainmaker.listeners.MessageListener;
 import panda.rainmaker.listeners.ReactionListener;
@@ -24,6 +23,8 @@ import panda.rainmaker.listeners.SlashCommandListener;
 import javax.security.auth.login.LoginException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Bot {
 
@@ -114,92 +115,99 @@ public class Bot {
         System.out.println("Setting up commands for: " + guild.getId());
         CommandListUpdateAction commands = guild.updateCommands();
 
+        List<CommandObject> commandObjectList = Commands.getCommands();
+        List<SlashCommandData> slashCommandData = commandObjectList.stream()
+                .map(CommandObject::getSlashImplementation)
+                .collect(Collectors.toList());
+
+        CommandListUpdateAction addCommandAction = commands.addCommands(slashCommandData);
+
         // Add slash commands for channel reactions
-        commands.addCommands(
-                Commands.slash("enable-reactions", "Enable a reaction for each message in a channel.")
-                        .addOptions(
-                                new OptionData(OptionType.CHANNEL, "channel",
-                                        "The channel to enable on.")
-                                        .setRequired(true)
-                                        .setChannelTypes(ChannelType.TEXT),
-                                new OptionData(OptionType.STRING, "emote",
-                                        "The reaction to add to messages.")
-                                        .setRequired(true)),
-
-                Commands.slash("disable-reactions", "Disable a reaction for each message in a channel")
-                        .addOptions(
-                                new OptionData(OptionType.CHANNEL, "channel",
-                                        "The channel to enable on.")
-                                        .setRequired(true)
-                                        .setChannelTypes(ChannelType.TEXT),
-                                new OptionData(OptionType.STRING, "emote",
-                                        "The reaction to add to messages."))
-        );
-
-        // Add slash commands for role reactions
-        commands.addCommands(
-                Commands.slash("set-role-channel", "Set the channel for all role associated messages")
-                        .addOptions(new OptionData(OptionType.CHANNEL, "channel",
-                                "The channel to associate.")
-                                .setRequired(true)
-                                .setChannelTypes(ChannelType.TEXT)),
-
-                Commands.slash("create-role-list", "Create a new role list.")
-                        .addOptions(new OptionData(OptionType.STRING, "list-name",
-                                "The name of the list to create.")
-                                .setRequired(true)),
-
-                Commands.slash("delete-role-list", "Deletes a role list.")
-                        .addOptions(new OptionData(OptionType.STRING, "list-name",
-                                "The name of the list to delete.")
-                                .setRequired(true)),
-
-                Commands.slash("add-role-to-list", "Add a role to the list")
-                        .addOptions(
-                                new OptionData(OptionType.STRING, "list-name",
-                                        "The list to add the role to.")
-                                        .setRequired(true),
-                                new OptionData(OptionType.ROLE, "role",
-                                        "The role to add to the list.")
-                                        .setRequired(true),
-                                new OptionData(OptionType.STRING, "emote",
-                                        "The emote to associate with the role.")
-                                        .setRequired(true)),
-
-                Commands.slash("remove-role-from-list", "Remove a role from a list")
-                        .addOptions(
-                                new OptionData(OptionType.STRING, "list-name",
-                                        "The list to remove the role from.")
-                                        .setRequired(true),
-                                new OptionData(OptionType.ROLE, "role",
-                                        "The role to remove from the list.")
-                                        .setRequired(true))
-        );
-
-        // Add slash commands for wiki/article
-        commands.addCommands(
-                Commands.slash("article", "Fetch an article from the RDA Articles.")
-                        .addOptions(
-                                new OptionData(OptionType.STRING, "title",
-                                        "A title filter to apply to the search.")
-                                        .setRequired(true),
-                                new OptionData(OptionType.STRING, "author",
-                                        "An author filter to apply to the search.")),
-
-                Commands.slash("wiki", "Search the Roblox Developer Hub for an Article.")
-                        .addOptions(
-                                new OptionData(OptionType.STRING, "query",
-                                        "The query to use when searching.")
-                                        .setRequired(true),
-                                new OptionData(OptionType.STRING, "category",
-                                        "The category filter to apply to the result(s).")
-                                        .addChoice("api-reference", "API Reference")
-                                        .addChoice("articles", "Articles")
-                                        .addChoice("learn-roblox", "Learn Roblox")
-                                        .addChoice("recipes", "Recipes")
-                                        .addChoice("resources", "Resources")
-                                        .addChoice("videos", "Videos"))
-        );
+//        commands.addCommands(
+//                Commands.slash("enable-reactions", "Enable a reaction for each message in a channel.")
+//                        .addOptions(
+//                                new OptionData(OptionType.CHANNEL, "channel",
+//                                        "The channel to enable on.")
+//                                        .setRequired(true)
+//                                        .setChannelTypes(ChannelType.TEXT),
+//                                new OptionData(OptionType.STRING, "emote",
+//                                        "The reaction to add to messages.")
+//                                        .setRequired(true)),
+//
+//                Commands.slash("disable-reactions", "Disable a reaction for each message in a channel")
+//                        .addOptions(
+//                                new OptionData(OptionType.CHANNEL, "channel",
+//                                        "The channel to enable on.")
+//                                        .setRequired(true)
+//                                        .setChannelTypes(ChannelType.TEXT),
+//                                new OptionData(OptionType.STRING, "emote",
+//                                        "The reaction to add to messages."))
+//        );
+//
+//        // Add slash commands for role reactions
+//        commands.addCommands(
+//                Commands.slash("set-role-channel", "Set the channel for all role associated messages")
+//                        .addOptions(new OptionData(OptionType.CHANNEL, "channel",
+//                                "The channel to associate.")
+//                                .setRequired(true)
+//                                .setChannelTypes(ChannelType.TEXT)),
+//
+//                Commands.slash("create-role-list", "Create a new role list.")
+//                        .addOptions(new OptionData(OptionType.STRING, "list-name",
+//                                "The name of the list to create.")
+//                                .setRequired(true)),
+//
+//                Commands.slash("delete-role-list", "Deletes a role list.")
+//                        .addOptions(new OptionData(OptionType.STRING, "list-name",
+//                                "The name of the list to delete.")
+//                                .setRequired(true)),
+//
+//                Commands.slash("add-role-to-list", "Add a role to the list")
+//                        .addOptions(
+//                                new OptionData(OptionType.STRING, "list-name",
+//                                        "The list to add the role to.")
+//                                        .setRequired(true),
+//                                new OptionData(OptionType.ROLE, "role",
+//                                        "The role to add to the list.")
+//                                        .setRequired(true),
+//                                new OptionData(OptionType.STRING, "emote",
+//                                        "The emote to associate with the role.")
+//                                        .setRequired(true)),
+//
+//                Commands.slash("remove-role-from-list", "Remove a role from a list")
+//                        .addOptions(
+//                                new OptionData(OptionType.STRING, "list-name",
+//                                        "The list to remove the role from.")
+//                                        .setRequired(true),
+//                                new OptionData(OptionType.ROLE, "role",
+//                                        "The role to remove from the list.")
+//                                        .setRequired(true))
+//        );
+//
+//        // Add slash commands for wiki/article
+//        commands.addCommands(
+//                Commands.slash("article", "Fetch an article from the RDA Articles.")
+//                        .addOptions(
+//                                new OptionData(OptionType.STRING, "title",
+//                                        "A title filter to apply to the search.")
+//                                        .setRequired(true),
+//                                new OptionData(OptionType.STRING, "author",
+//                                        "An author filter to apply to the search.")),
+//
+//                Commands.slash("wiki", "Search the Roblox Developer Hub for an Article.")
+//                        .addOptions(
+//                                new OptionData(OptionType.STRING, "query",
+//                                        "The query to use when searching.")
+//                                        .setRequired(true),
+//                                new OptionData(OptionType.STRING, "category",
+//                                        "The category filter to apply to the result(s).")
+//                                        .addChoice("api-reference", "API Reference")
+//                                        .addChoice("articles", "Articles")
+//                                        .addChoice("learn-roblox", "Learn Roblox")
+//                                        .addChoice("recipes", "Recipes")
+//                                        .addChoice("resources", "Resources")
+//                                        .addChoice("videos", "Videos"))
+//        );
 
         commands.queue();
     }

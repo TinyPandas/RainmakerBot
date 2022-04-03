@@ -54,16 +54,6 @@ public class ReactionListener extends ListenerAdapter {
                     }
                 });
             }
-        } else {
-            System.out.println("No roleId");
-            TextChannel channel = event.getTextChannel();
-            channel.retrieveMessageById(messageId).queue(msg -> {
-                if (emote.isEmote()) {
-                    msg.removeReaction(emote.getEmote(), member.getUser()).queue();
-                } else {
-                    msg.removeReaction(emote.getEmoji(), member.getUser()).queue();
-                }
-            });
         }
     }
 

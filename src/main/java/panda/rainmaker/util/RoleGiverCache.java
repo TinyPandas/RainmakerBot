@@ -5,17 +5,11 @@ import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.api.entities.*;
 import panda.rainmaker.database.GuildDao;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.ReactionObject;
 
 import java.util.*;
 
 public class RoleGiverCache {
-
-    //private static final Map<String, String> roleToReactionMap = new HashMap<>();
-
-    private static Set<String> getRolesForList(GuildSettings guildSettings, String listName) {
-        System.out.println("Getting roles for " + listName);
-        return guildSettings.getListToRoleMap().getOrDefault(listName, new HashSet<>());
-    }
 
     public static void setRoleChannelId(GuildSettings guildSettings, String channelId) {
         guildSettings.setRoleChannelId(channelId);
@@ -164,6 +158,51 @@ public class RoleGiverCache {
         return "Successfully deleted list `" + listName + "`.";
     }
 
+    public static String getRoleIdFromEmote(GuildSettings guildSettings, String messageId, String emoteId) {
+        String listUID = guildSettings.getListToMessageMap().get(messageId);
+
+        if (listUID != null) {
+            String reactionUID = getUID(listUID, emoteId);
+            String roleId = guildSettings.getReactionToRoleMap().get(reactionUID);
+
+            if (roleId == null) {
+                System.out.println("No role binding found for " + reactionUID);
+            }
+
+            return roleId;
+        } else {
+            System.out.println("No list found for " + messageId + " and " + emoteId);
+        }
+
+        return null;
+    }
+
+    public static ReactionObject getReactionCacheValue(Guild guild, String reaction) throws Exception {
+        List<String> unicodeEmojis = EmojiParser.extractEmojis(reaction);
+
+        if (unicodeEmojis.size() > 0) {
+            return new ReactionObject(true, unicodeEmojis.get(0));
+        }
+
+        if (reaction.contains(":")) {
+            int index = reaction.indexOf(":", reaction.indexOf(":") + 1);
+            String reactionId = reaction.substring(index + 1, reaction.length() - 1);
+            return new ReactionObject(false, reactionId);
+        }
+
+        List<Emote> emotes = guild.getEmotesByName(reaction, true);
+        if (emotes.size() == 0) {
+            return null;
+        }
+
+        return new ReactionObject(false, emotes.get(0).getId());
+    }
+
+    private static Set<String> getRolesForList(GuildSettings guildSettings, String listName) {
+        System.out.println("Getting roles for " + listName);
+        return guildSettings.getListToRoleMap().getOrDefault(listName, new HashSet<>());
+    }
+
     private static void updateMessage(GuildSettings guildSettings, Guild guild, String listName) {
         String listUID = getUID(guild, listName);
         String roleChannelId = guildSettings.getRoleChannelId();
@@ -228,25 +267,6 @@ public class RoleGiverCache {
                 channel.retrieveMessageById(messageId).queue(msg -> msg.delete().queue());
             }
         }
-    }
-
-    public static String getRoleIdFromEmote(GuildSettings guildSettings, String messageId, String emoteId) {
-        String listUID = guildSettings.getListToMessageMap().get(messageId);
-
-        if (listUID != null) {
-            String reactionUID = getUID(listUID, emoteId);
-            String roleId = guildSettings.getReactionToRoleMap().get(reactionUID);
-
-            if (roleId == null) {
-                System.out.println("No role binding found for " + reactionUID);
-            }
-
-            return roleId;
-        } else {
-            System.out.println("No list found for " + messageId + " and " + emoteId);
-        }
-
-        return null;
     }
 
     private static String getUID(Guild guild, String objectId) {

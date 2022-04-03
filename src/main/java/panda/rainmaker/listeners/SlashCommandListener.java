@@ -12,6 +12,8 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.jetbrains.annotations.NotNull;
+import panda.rainmaker.command.CommandObject;
+import panda.rainmaker.command.Commands;
 import panda.rainmaker.database.GlobalDao;
 import panda.rainmaker.database.GuildDao;
 import panda.rainmaker.database.models.GlobalSettings;
@@ -58,148 +60,54 @@ public class SlashCommandListener extends ListenerAdapter {
             guildSettings = GuildDao.loadDefaults(guildId);
         }
 
-        switch(event.getName()) {
-            case "enable-reactions":
-                TextChannel enableChannel = event.getOption("channel").getAsTextChannel();
-                String enableReaction = event.getOption("emote").getAsString();
-                enableReaction(event, guildSettings, enableChannel, enableReaction);
-                break;
-            case "disable-reactions":
-                TextChannel disableChannel = event.getOption("channel").getAsTextChannel();
-                OptionMapping disableReactionOption = event.getOption("emote");
-                String disableReaction = null;
-                if (disableReactionOption != null) {
-                    disableReaction = disableReactionOption.getAsString();
-                }
-                disableReaction(event, guildSettings, disableChannel, disableReaction);
-                break;
-            case "set-role-channel":
-                TextChannel channel = event.getOption("channel").getAsTextChannel();
-                setRoleChannel(event, guildSettings, channel);
-                break;
-            case "create-role-list":
-                String newListName = event.getOption("list-name").getAsString();
-                createRoleList(event, guildSettings, newListName);
-                break;
-            case "add-role-to-list":
-                String addToListName = event.getOption("list-name").getAsString();
-                Role roleToAdd = event.getOption("role").getAsRole();
-                String emote = event.getOption("emote").getAsString();
-                addRoleToList(event, guildSettings, addToListName, roleToAdd, emote);
-                break;
-            case "remove-role-from-list":
-                String removeFromListName = event.getOption("list-name").getAsString();
-                Role roleToRemove = event.getOption("role").getAsRole();
-                removeRoleFromList(event, guildSettings, removeFromListName, roleToRemove);
-                break;
-            case "delete-role-list":
-                String deleteListName = event.getOption("list-name").getAsString();
-                deleteRoleList(event, guildSettings, deleteListName);
-                break;
-            case "article":
-                String titleQuery = event.getOption("title").getAsString();
-                OptionMapping authorQueryOption = event.getOption("author");
-                String authorQuery = null;
-                if (authorQueryOption != null) {
-                    authorQuery = authorQueryOption.getAsString();
-                }
-                findArticle(event, titleQuery, authorQuery);
-                break;
-            case "wiki":
-                String searchQuery = event.getOption("query").getAsString();
-                String category = null;
-                OptionMapping categoryOption = event.getOption("category");
-                if (categoryOption != null) {
-                    category = categoryOption.getAsString();
-                }
-                searchWiki(event, searchQuery, category);
-                break;
-            default:
-                System.out.println("No event for this " + event.getName());
-                break;
-        }
-    }
+        Commands.getCommand(event.getName()).execute(event, guildSettings);
 
-    private void enableReaction(SlashCommandInteractionEvent event, GuildSettings guildSettings, TextChannel channel, String reaction) {
-        event.deferReply(true).queue();
-        InteractionHook hook = event.getHook();
-        hook.setEphemeral(true);
-        if (!event.getMember().hasPermission(Permission.MANAGE_CHANNEL)) {
-            hook.sendMessage("You do not have permission to enable reactions in this channel.").queue();
-            return;
-        }
-
-        Member selfMember = event.getGuild().getSelfMember();
-        if (!selfMember.hasPermission(Permission.MESSAGE_ADD_REACTION)) {
-            hook.sendMessage("I do not have permission to send reactions.").queue();
-            return;
-        }
-
-        String channelId = channel.getId();
-        String channelMention = channel.getAsMention();
-
-        Guild guild = event.getGuild();
-        ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
-        if (reactionObject == null) {
-            hook.sendMessage("Failed to parse emoji/emote. Please ensure input value is correct and try again.").queue();
-            return;
-        }
-
-        String reactionValue = reactionObject.getValue();
-        ChannelReactionCache.addReactionToChannel(channelId, reactionValue);
-        if (reactionObject.isEmoji()) {
-            hook.sendMessage("Successfully enabled " + EmojiParser.parseToUnicode(reactionValue) + " in " + channelMention).queue();
-        } else {
-            Emote emote = guild.getEmoteById(reactionValue);
-
-            if (emote != null) {
-                hook.sendMessage("Successfully enabled " + emote.getAsMention() + " in " + channelMention).queue();
-            } else {
-                ChannelReactionCache.removeReactionFromChannel(channelId, reactionValue);
-                hook.sendMessage("Failed to enable" + reactionValue + " in " + channelMention + ". [Missing Emote?]").queue();
-            }
-        }
-    }
-
-    private void disableReaction(SlashCommandInteractionEvent event, GuildSettings guildSettings, TextChannel channel, String reaction) {
-        event.deferReply(true).queue();
-        InteractionHook hook = event.getHook();
-        hook.setEphemeral(true);
-        if (!event.getMember().hasPermission(Permission.MANAGE_CHANNEL)) {
-            hook.sendMessage("You do not have permission to enable reactions in this channel.").queue();
-            return;
-        }
-
-        Member selfMember = event.getGuild().getSelfMember();
-        if (!selfMember.hasPermission(Permission.MESSAGE_ADD_REACTION)) {
-            hook.sendMessage("I do not have permission to send reactions.").queue();
-            return;
-        }
-
-        String channelId = channel.getId();
-        String channelMention = channel.getAsMention();
-
-        Guild guild = event.getGuild();
-        ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
-        if (reactionObject == null) {
-            ChannelReactionCache.removeReactionsInChannel(channelId);
-            hook.sendMessage("Successfully disabled all reaction events in " + channelMention + ".").queue();
-            return;
-        }
-
-        String reactionValue = reactionObject.getValue();
-        ChannelReactionCache.removeReactionFromChannel(channelId, reactionValue);
-        if (reactionObject.isEmoji()) {
-            hook.sendMessage("Successfully disabled " + EmojiParser.parseToUnicode(reactionValue) + " in " + channelMention).queue();
-        } else {
-            Emote emote = guild.getEmoteById(reactionValue);
-
-            if (emote != null) {
-                hook.sendMessage("Successfully disabled " + emote.getAsMention() + " in " + channelMention).queue();
-            } else {
-                hook.sendMessage("Forcefully disabled " + reactionValue + " in " + channelMention + ". [Missing Emote.]").queue();
-            }
-        }
+//        switch(event.getName()) {
+//            case "set-role-channel":
+//                TextChannel channel = event.getOption("channel").getAsTextChannel();
+//                setRoleChannel(event, guildSettings, channel);
+//                break;
+//            case "create-role-list":
+//                String newListName = event.getOption("list-name").getAsString();
+//                createRoleList(event, guildSettings, newListName);
+//                break;
+//            case "add-role-to-list":
+//                String addToListName = event.getOption("list-name").getAsString();
+//                Role roleToAdd = event.getOption("role").getAsRole();
+//                String emote = event.getOption("emote").getAsString();
+//                addRoleToList(event, guildSettings, addToListName, roleToAdd, emote);
+//                break;
+//            case "remove-role-from-list":
+//                String removeFromListName = event.getOption("list-name").getAsString();
+//                Role roleToRemove = event.getOption("role").getAsRole();
+//                removeRoleFromList(event, guildSettings, removeFromListName, roleToRemove);
+//                break;
+//            case "delete-role-list":
+//                String deleteListName = event.getOption("list-name").getAsString();
+//                deleteRoleList(event, guildSettings, deleteListName);
+//                break;
+//            case "article":
+//                String titleQuery = event.getOption("title").getAsString();
+//                OptionMapping authorQueryOption = event.getOption("author");
+//                String authorQuery = null;
+//                if (authorQueryOption != null) {
+//                    authorQuery = authorQueryOption.getAsString();
+//                }
+//                findArticle(event, titleQuery, authorQuery);
+//                break;
+//            case "wiki":
+//                String searchQuery = event.getOption("query").getAsString();
+//                String category = null;
+//                OptionMapping categoryOption = event.getOption("category");
+//                if (categoryOption != null) {
+//                    category = categoryOption.getAsString();
+//                }
+//                searchWiki(event, searchQuery, category);
+//                break;
+//            default:
+//                System.out.println("No event for this " + event.getName());
+//                break;
+//        }
     }
 
     public void setRoleChannel(SlashCommandInteractionEvent event, GuildSettings guildSettings, TextChannel channel) {
