@@ -1,7 +1,6 @@
 package panda.rainmaker.command;
 
-import panda.rainmaker.command.commands.DisableReactionsCommand;
-import panda.rainmaker.command.commands.EnableReactionsCommand;
+import panda.rainmaker.command.commands.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,8 +13,15 @@ public class Commands {
     static {
         System.out.println("Loading commands.");
 
-        addCommandObject(new EnableReactionsCommand());
+        addCommandObject(new AddRoleToListCommand());
+        addCommandObject(new ArticleCommand());
+        addCommandObject(new CreateRoleListCommand());
+        addCommandObject(new DeleteRoleListCommand());
         addCommandObject(new DisableReactionsCommand());
+        addCommandObject(new EnableReactionsCommand());
+        addCommandObject(new RemoveRoleFromListCommand());
+        addCommandObject(new SetRoleChannelCommand());
+        addCommandObject(new WikiCommand());
     }
 
     private static void addCommandObject(CommandObject commandObject) {

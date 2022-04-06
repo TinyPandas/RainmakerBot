@@ -6,8 +6,6 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import panda.rainmaker.command.CommandObject;
@@ -34,7 +32,6 @@ public class EnableReactionsCommand extends CommandObject {
     @Override
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
-        InteractionHook hook = event.getHook();
 
         try {
             Guild guild = getGuildFromSlashCommandEvent(event);
@@ -45,15 +42,14 @@ public class EnableReactionsCommand extends CommandObject {
             TextChannel channel = getTextChannelFromOption(event.getOption("channel"));
             ReactionObject reactionObject = getReactionCacheValue(
                     guild,
-                    getEmoteFromOption(event.getOption("emote"))
+                    getStringFromOption("Emote", event.getOption("emote"))
             );
 
             ChannelReactionCache.addReactionToChannel(channel.getId(), reactionObject);
-            passEvent(hook, String.format("Successfully enabled %s in %s.",
+            passEvent(event, String.format("Successfully enabled %s in %s.",
                     reactionObject.getDisplay(guild), channel.getAsMention()));
         } catch (Exception e) {
-            e.printStackTrace();
-            failEvent(hook, e.getMessage());
+            failEvent(event, e.getMessage());
         }
     }
 }

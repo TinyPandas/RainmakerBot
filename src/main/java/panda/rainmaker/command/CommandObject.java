@@ -1,7 +1,6 @@
 package panda.rainmaker.command;
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
@@ -48,13 +47,13 @@ public abstract class CommandObject {
 
     public abstract void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings);
 
-    public boolean failEvent(InteractionHook hook, String reason) {
-        hook.editOriginal(String.format("[Failed to execute: %s]%n%s", getName(), reason)).queue();
+    public boolean failEvent(SlashCommandInteractionEvent event, String reason) {
+        event.reply(String.format("[Failed to execute: %s]%n%s", getName(), reason)).queue();
         return false;
     }
 
-    public boolean passEvent(InteractionHook hook, String reason) {
-        hook.editOriginal(reason).queue();
+    public boolean passEvent(SlashCommandInteractionEvent event, String reason) {
+        event.reply(reason).queue();
         return true;
     }
 }

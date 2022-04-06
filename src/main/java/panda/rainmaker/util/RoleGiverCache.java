@@ -7,7 +7,10 @@ import panda.rainmaker.database.GuildDao;
 import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.entity.ReactionObject;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class RoleGiverCache {
 
@@ -19,6 +22,12 @@ public class RoleGiverCache {
     public static boolean isInvalidList(GuildSettings guildSettings, Guild guild, String listName) {
         System.out.println("Validating: " + listName + " [" + getUID(guild, listName) + "]");
         return !guildSettings.getListToRoleMap().containsKey(getUID(guild, listName));
+    }
+
+    public static void validateList(GuildSettings guildSettings, Guild guild, String listName) throws Exception {
+        if (!guildSettings.getListToRoleMap().containsKey(getUID(guild, listName))) {
+            throw new Exception(String.format("`%s` does not exist.", listName));
+        }
     }
 
     public static String createList(GuildSettings guildSettings, Guild guild, String listName) {
@@ -61,8 +70,11 @@ public class RoleGiverCache {
         return "Successfully create a role list with the name: " + listName;
     }
 
-    public static String addRoleToList(GuildSettings guildSettings, Guild guild, String listName, Role role, String reactionId) {
+    public static String addRoleToList(GuildSettings guildSettings, Guild guild, String listName, Role role,
+                                       ReactionObject reactionObject) throws Exception {
+        if (reactionObject == null) throw new Exception("ReactionObject was null.");
         String roleId = role.getId();
+        String reactionId = reactionObject.getValue();
         String reactionUID = getUID(guild, getUID(listName, reactionId));
         String roleUID = getUID(guild, roleId);
 
@@ -86,18 +98,16 @@ public class RoleGiverCache {
         String listUID = getUID(guild, listName);
         Set<String> roleList = getRolesForList(guildSettings, listUID);
         roleList.add(roleId);
-        if (guildSettings.getListToRoleMap().containsKey(listUID)) {
-            guildSettings.getListToRoleMap().replace(listUID, roleList);
-        } else {
-            guildSettings.getListToRoleMap().put(listUID, roleList);
-        }
+
+        guildSettings.getListToRoleMap().put(listUID, roleList);
 
         GuildDao.saveGuildSettings(guildSettings);
         updateMessage(guildSettings, guild, listName);
         return "Successfully added " + role.getAsMention() + " to " + listName;
     }
 
-    public static void removeRoleFromList(GuildSettings guildSettings, Guild guild, String listName, String roleId) {
+    public static String removeRoleFromList(GuildSettings guildSettings, Guild guild, String listName, Role role) {
+        String roleId = role.getId();
         Map<String, String> roleToReactionMap = guildSettings.getRoleToReactionMap();
         String reactionId = roleToReactionMap.remove(getUID(guild, roleId));
         guildSettings.setRoleToReactionMap(roleToReactionMap);
@@ -110,14 +120,11 @@ public class RoleGiverCache {
         Set<String> roleList = getRolesForList(guildSettings, listUID);
         roleList.remove(roleId);
 
-        if (guildSettings.getListToRoleMap().containsKey(listUID)) {
-            guildSettings.getListToRoleMap().replace(listUID, roleList);
-        } else {
-            guildSettings.getListToRoleMap().put(listUID, roleList);
-        }
+        guildSettings.getListToRoleMap().put(listUID, roleList);
 
         GuildDao.saveGuildSettings(guildSettings);
         updateMessage(guildSettings, guild, listName);
+        return "Successfully removed " + role.getAsMention() + " from " + listName;
     }
 
     public static String deleteRoleList(GuildSettings guildSettings, Guild guild, String listName) {

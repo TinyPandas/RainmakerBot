@@ -6,7 +6,6 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import panda.rainmaker.command.CommandObject;
@@ -31,8 +30,7 @@ public class DisableReactionsCommand extends CommandObject {
 
     @Override
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
-        event.deferReply(true).complete();
-        InteractionHook hook = event.getHook();
+        event.deferReply(true).queue();
 
         try {
             Guild guild = getGuildFromSlashCommandEvent(event);
@@ -46,10 +44,10 @@ public class DisableReactionsCommand extends CommandObject {
                     getEmoteFromOption(event.getOption("emote"))
             );
             ChannelReactionCache.removeReactionFromChannel(channel.getId(), reactionObject);
-            passEvent(hook, String.format(getDisplayResultForRemoveReactionFromReactionObject(guild, reactionObject),
+            passEvent(event, String.format(getDisplayResultForRemoveReactionFromReactionObject(guild, reactionObject),
                     channel.getAsMention()));
         } catch (Exception e) {
-            failEvent(hook, e.getMessage());
+            failEvent(event, e.getMessage());
         }
     }
 }
