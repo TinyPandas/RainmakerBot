@@ -15,10 +15,12 @@ public class Commands {
 
         addCommandObject(new AddRoleToListCommand());
         addCommandObject(new ArticleCommand());
+        // TODO addCommandObject(new CommandHistoryCommand());
         addCommandObject(new CreateRoleListCommand());
         addCommandObject(new DeleteRoleListCommand());
         addCommandObject(new DisableReactionsCommand());
         addCommandObject(new EnableReactionsCommand());
+        addCommandObject(new ReportCommand());
         addCommandObject(new RemoveRoleFromListCommand());
         addCommandObject(new SetRoleChannelCommand());
         addCommandObject(new WikiCommand());

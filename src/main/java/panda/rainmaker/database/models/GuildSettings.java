@@ -11,6 +11,8 @@ public class GuildSettings {
     private ObjectId _id;
     private String guildId;
     private String roleChannelId;
+    private String staffRoleId;
+    private String reportChannelId;
 
     // roleId -> reactionId
     private Map<String, String> roleToReactionMap;
@@ -106,6 +108,22 @@ public class GuildSettings {
         this.listToMessageMap = listToMessageMap;
     }
 
+    public String getStaffRoleId() {
+        return staffRoleId;
+    }
+
+    public void setStaffRoleId(String staffRoleId) {
+        this.staffRoleId = staffRoleId;
+    }
+
+    public String getReportChannelId() {
+        return staffRoleId;
+    }
+
+    public void setReportChannelId(String reportChannelId) {
+        this.reportChannelId = reportChannelId;
+    }
+
     @Override
     public String toString() {
         return "GuildSettings{" +
@@ -117,6 +135,8 @@ public class GuildSettings {
                 ", listToRoleMap=" + listToRoleMap +
                 ", messageToListMap=" + messageToListMap +
                 ", listToMessageMap=" + listToMessageMap +
+                ", staffRoleId='" + staffRoleId + '\'' +
+                ", reportChannelId='" + reportChannelId + '\'' +
                 '}';
     }
 }

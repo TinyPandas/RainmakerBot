@@ -38,6 +38,11 @@ public class PandaUtil {
         return guild.getSelfMember();
     }
 
+    public static Member getMemberFromOption(OptionMapping optionMapping) throws Exception {
+        if (optionMapping == null) throw new Exception("User option was not provided.");
+        return optionMapping.getAsMember();
+    }
+
     public static Guild getGuildFromSlashCommandEvent(SlashCommandInteractionEvent event) throws Exception {
         if (event.getGuild() == null) throw new Exception("Failed to fetch Guild.");
         return event.getGuild();
@@ -46,6 +51,10 @@ public class PandaUtil {
     public static TextChannel getTextChannelFromOption(OptionMapping optionMapping) throws Exception {
         if (optionMapping == null) throw new Exception("Channel option was not provided.");
         return optionMapping.getAsTextChannel();
+    }
+
+    public static TextChannel getTextChannelFromEvent(SlashCommandInteractionEvent event) {
+        return event.getTextChannel();
     }
 
     public static String getStringFromOption(String optionName, OptionMapping optionMapping) throws Exception {
@@ -61,5 +70,19 @@ public class PandaUtil {
     public static Role getRoleFromOption(OptionMapping optionMapping) throws Exception {
         if (optionMapping == null) throw new Exception("Role was not provided.");
         return optionMapping.getAsRole();
+    }
+
+    public static Role getRoleFromGuildById(Guild guild, String roleId) throws Exception {
+        if (roleId == null) throw new Exception("Staff role not defined.");
+        Role role = guild.getRoleById(roleId);
+        if (role == null) throw new Exception("Invalid staff role id.");
+        return role;
+    }
+
+    public static TextChannel getTextChannelFromGuildById(Guild guild, String channelId) throws Exception {
+        if (channelId == null) throw new Exception("Report channel not defined.");
+        TextChannel textChannel = guild.getTextChannelById(channelId);
+        if (textChannel == null) throw new Exception("Invalid report channel id.");
+        return textChannel;
     }
 }

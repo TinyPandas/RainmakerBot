@@ -9,7 +9,9 @@ public enum OptionDataDefs {
     ROLE (OptionType.STRING, "role", "The role to interact with.", true),
     EMOTE (OptionType.STRING, "emote", "The emote to interact with.", true),
     LIST (OptionType.STRING, "list", "The list to interact with.", true),
-    CHANNEL (OptionType.CHANNEL, "channel", "The channel to interact with.", true);
+    CHANNEL (OptionType.CHANNEL, "channel", "The channel to interact with.", true),
+    USER (OptionType.USER, "user", "The user to interact with.", true),
+    REASON (OptionType.STRING, "reason", "The reason for this command.", true);
 
     private final OptionType type;
     private final String name;

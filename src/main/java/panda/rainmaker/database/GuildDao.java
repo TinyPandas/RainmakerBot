@@ -4,7 +4,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.UpdateResult;
-import panda.rainmaker.database.models.GlobalSettings;
 import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.entity.BotMongoClient;
 
