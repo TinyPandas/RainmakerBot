@@ -68,8 +68,7 @@ public class Bot {
         }
 
         try {
-            boolean test = args[2] != null;
-            System.out.println("Testing: " + test);
+            boolean test = args.length == 3;
 
             new Bot(args[0], args[1], test);
         } catch (LoginException | InterruptedException e) {

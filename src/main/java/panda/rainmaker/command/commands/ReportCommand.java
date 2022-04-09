@@ -60,7 +60,7 @@ public class ReportCommand extends CommandObject {
             List<String> userLastMessages = userHistory
                     .subList(0, Math.min(userHistory.size(), 5))
                     .stream()
-                    .map(Message::getContentRaw)
+                    .map(msg -> msg.getContentRaw().substring(0, Math.min(msg.getContentRaw().length(), 204)))
                     .collect(Collectors.toList());
 
             String userHistoryMessage = "";
