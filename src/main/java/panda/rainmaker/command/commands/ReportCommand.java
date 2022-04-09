@@ -34,31 +34,53 @@ public class ReportCommand extends CommandObject {
             String reason = getStringFromOption("Reason", event.getOption("reason"));
             Role staffRole = getRoleFromGuildById(guild, guildSettings.getStaffRoleId());
             TextChannel reportChannel = getTextChannelFromGuildById(guild, guildSettings.getReportChannelId());
-            List<Member> allStaff = guild.getMembersWithRoles(staffRole);
+
+            List<Member> allStaff = guild.getMembersWithRoles(staffRole)
+                    .stream()
+                    .filter(member -> !member.getUser().isBot())
+                    .collect(Collectors.toList());
+
             List<Member> onlineStaff = new ArrayList<>(allStaff)
                     .stream()
                     .filter(member -> member.getOnlineStatus().equals(OnlineStatus.ONLINE))
                     .collect(Collectors.toList());
-            String message = "";
-            if (onlineStaff.size() == 0) {
-                message += allStaff.stream().map(IMentionable::getAsMention).collect(Collectors.joining());
-            } else {
-                message += onlineStaff.stream().map(IMentionable::getAsMention).collect(Collectors.joining());
+
+            String message = staffRole.getAsMention();
+            if (onlineStaff.size() != 0) {
+                message = onlineStaff.stream().map(IMentionable::getAsMention).collect(Collectors.joining());
+            }
+
+            String lastMessageId = channelOfIncident.getLatestMessageId();
+            MessageHistory channelHistory = channelOfIncident.getHistoryBefore(lastMessageId, 100).complete();
+            List<Message> userHistory = channelHistory.getRetrievedHistory()
+                    .stream()
+                    .filter(historyMessage -> historyMessage.getAuthor().getId().equals(reported.getId()))
+                    .collect(Collectors.toList());
+
+            List<String> userLastMessages = userHistory
+                    .subList(0, Math.min(userHistory.size(), 5))
+                    .stream()
+                    .map(Message::getContentRaw)
+                    .collect(Collectors.toList());
+
+            String userHistoryMessage = "";
+            for (int i = userLastMessages.size() - 1; i >= 0; i--) {
+                userHistoryMessage = String.format("%s%n%s", userHistoryMessage, userLastMessages.get(i));
             }
 
             EmbedBuilder embedBuilder = new EmbedBuilder()
                     .setAuthor("Report Command")
                     .setTitle("User Report")
-                    .addField("User being reported", reported.getAsMention(), false)
-                    .addField("User issuing report", reporter.getAsMention(), false)
+                    .addField("User being reported", reported.getAsMention(), true)
+                    .addField("User issuing report", reporter.getAsMention(), true)
+                    .addField("Channel of report", channelOfIncident.getAsMention(), true)
                     .addField("Reason for report", reason, false)
-                    .addField("Channel of report", channelOfIncident.getAsMention(), false);
+                    .addField("User Last 5 Messages", String.format("```%n%s%n```", userHistoryMessage), false);
 
-            reportChannel.sendMessage(message).setEmbeds(embedBuilder.build()).queue(success -> {
-                passEvent(event, "Report posted successfully.");
-            }, fail -> {
-                failEvent(event, "Failed to submit report. Please try again");
-            });
+            reportChannel.sendMessage(message).setEmbeds(embedBuilder.build()).queue(
+                    success -> passEvent(event, "Report posted successfully."),
+                    fail -> failEvent(event, "Failed to submit report. Please try again")
+            );
         } catch (Exception e) {
             failEvent(event, e.getMessage());
         }

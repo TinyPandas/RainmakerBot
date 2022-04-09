@@ -41,7 +41,7 @@ public class DisableReactionsCommand extends CommandObject {
             TextChannel channel = getTextChannelFromOption(event.getOption("channel"));
             ReactionObject reactionObject = getReactionCacheValue(
                     guild,
-                    getEmoteFromOption(event.getOption("emote"))
+                    getStringFromOption("Emote", event.getOption("emote"))
             );
             ChannelReactionCache.removeReactionFromChannel(channel.getId(), reactionObject);
             passEvent(event, String.format(getDisplayResultForRemoveReactionFromReactionObject(guild, reactionObject),

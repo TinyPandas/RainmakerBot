@@ -28,16 +28,12 @@ import java.util.stream.Collectors;
 
 public class Bot {
 
-//    AWSCredentialsProvider awsCreds;
-
-    public Bot(final String token, final String dbURI) throws LoginException, InterruptedException {
-//        awsCreds = DefaultAWSCredentialsProviderChain.getInstance();
-
+    public Bot(final String token, final String dbURI, final boolean test) throws LoginException, InterruptedException {
         JDABuilder builder = JDABuilder.createDefault(token);
 
         configureMemoryUsage(builder);
         try {
-            connectDb(dbURI);
+            connectDb(dbURI, test);
         } catch (UnknownHostException uhe) {
             System.err.println("Failed to connect to DB.");
             System.exit(0);
@@ -72,7 +68,10 @@ public class Bot {
         }
 
         try {
-            new Bot(args[0], args[1]);
+            boolean test = args[2] != null;
+            System.out.println("Testing: " + test);
+
+            new Bot(args[0], args[1], test);
         } catch (LoginException | InterruptedException e) {
             e.printStackTrace();
             System.err.println("Failed to login bot.");
@@ -87,7 +86,7 @@ public class Bot {
             // Disable All CacheFlags.
             .disableCache(Arrays.asList(CacheFlag.values()))
             // Enable specific CacheFlags
-            .enableCache(CacheFlag.EMOTE)
+            .enableCache(CacheFlag.EMOTE, CacheFlag.CLIENT_STATUS)
             // Only cache members who are online or owner of the guild.
             .setMemberCachePolicy(MemberCachePolicy.ONLINE.or(MemberCachePolicy.OWNER))
             // Disable member chunking on startup.
@@ -97,18 +96,18 @@ public class Bot {
             // Enable specific intents.
             .enableIntents(
                     GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS,
-                    GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MESSAGE_REACTIONS
+                    GatewayIntent.GUILD_EMOJIS, GatewayIntent.GUILD_MESSAGE_REACTIONS, GatewayIntent.GUILD_PRESENCES
             )
             // Consider guilds with more than 50 members as "large".
             // Large guilds will only provide online members in the setup and thus reduce
             // bandwidth if chunking is disabled.
             .setLargeThreshold(50)
             // Set Activity to display the version.
-            .setActivity(Activity.playing("v0.4_alpha"));
+            .setActivity(Activity.playing("v0.6_alpha"));
     }
 
-    private static void connectDb(final String dbURI) throws UnknownHostException {
-        new BotMongoClient(dbURI);
+    private static void connectDb(final String dbURI, final boolean test) throws UnknownHostException {
+        new BotMongoClient(dbURI, test);
     }
 
     private static void setupGuild(Guild guild) {

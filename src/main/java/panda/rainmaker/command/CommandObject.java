@@ -1,5 +1,6 @@
 package panda.rainmaker.command;
 
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
@@ -48,12 +49,12 @@ public abstract class CommandObject {
     public abstract void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings);
 
     public boolean failEvent(SlashCommandInteractionEvent event, String reason) {
-        event.reply(String.format("[Failed to execute: %s]%n%s", getName(), reason)).queue();
+        event.getHook().editOriginal(String.format("[Failed to execute: %s]%n%s", getName(), reason)).queue();
         return false;
     }
 
-    public boolean passEvent(SlashCommandInteractionEvent event, String reason) {
-        event.reply(reason).queue();
+    public boolean passEvent(SlashCommandInteractionEvent event, String reason, MessageEmbed... embeds) {
+        event.getHook().editOriginal(reason).setEmbeds(embeds).queue();
         return true;
     }
 }

@@ -1,12 +1,13 @@
 package panda.rainmaker.database.models;
 
 import org.bson.types.ObjectId;
+import panda.rainmaker.database.GuildDao;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class GuildSettings {
+
+    public static final List<String> FIELDS = Arrays.asList("roleChannelId", "staffRoleId", "reportChannelId");
 
     private ObjectId _id;
     private String guildId;
@@ -117,7 +118,7 @@ public class GuildSettings {
     }
 
     public String getReportChannelId() {
-        return staffRoleId;
+        return reportChannelId;
     }
 
     public void setReportChannelId(String reportChannelId) {
@@ -138,5 +139,45 @@ public class GuildSettings {
                 ", staffRoleId='" + staffRoleId + '\'' +
                 ", reportChannelId='" + reportChannelId + '\'' +
                 '}';
+    }
+
+    public String getValueForField(String field) {
+        switch(field) {
+            case "roleChannelId":
+                return getRoleChannelId();
+            case "staffRoleId":
+                return getStaffRoleId();
+            case "reportChannelId":
+                return getReportChannelId();
+        }
+
+        return null;
+    }
+
+    private void setValueForField(String field, String value) {
+        switch(field) {
+            case "roleChannelId":
+                setRoleChannelId(value);
+                break;
+            case "staffRoleId":
+                setStaffRoleId(value);
+                break;
+            case "reportChannelId":
+                setReportChannelId(value);
+                break;
+        }
+    }
+
+    public String updateFieldWithValue(String field, String value) {
+        System.out.println("Updating " + field + " to " + value);
+        String currentValue = getValueForField(field);
+        setValueForField(field, value);
+        boolean updated = GuildDao.saveGuildSettings(this);
+
+        if (updated) {
+            return String.format("Successfully updated %s to %s. [Old value: %s]", field, value, currentValue);
+        }
+
+        return String.format("Failed to update %s to %s. [Current value: %s]", field, value, currentValue);
     }
 }

@@ -22,7 +22,9 @@ public class Commands {
         addCommandObject(new EnableReactionsCommand());
         addCommandObject(new ReportCommand());
         addCommandObject(new RemoveRoleFromListCommand());
-        addCommandObject(new SetRoleChannelCommand());
+        addCommandObject(new SetConfigValueCommand());
+        //addCommandObject(new SetRoleChannelCommand());
+        addCommandObject(new ViewConfigCommand());
         addCommandObject(new WikiCommand());
     }
 

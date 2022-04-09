@@ -11,7 +11,9 @@ public enum OptionDataDefs {
     LIST (OptionType.STRING, "list", "The list to interact with.", true),
     CHANNEL (OptionType.CHANNEL, "channel", "The channel to interact with.", true),
     USER (OptionType.USER, "user", "The user to interact with.", true),
-    REASON (OptionType.STRING, "reason", "The reason for this command.", true);
+    REASON (OptionType.STRING, "reason", "The reason for this command.", true),
+    CONFIG_FIELD (OptionType.STRING, "field", "The config field to update.", true),
+    CONFIG_VALUE (OptionType.STRING, "value", "The new value to use in the config.", true);
 
     private final OptionType type;
     private final String name;

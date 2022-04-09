@@ -26,7 +26,7 @@ public class GuildDao {
         return settings.first();
     }
 
-    public static void saveGuildSettings(GuildSettings guildSettings) {
+    public static boolean saveGuildSettings(GuildSettings guildSettings) {
         MongoDatabase db = BotMongoClient.getDatabase("rainmaker");
         MongoCollection<GuildSettings> collection = BotMongoClient.getGuildCollection(db);
 
@@ -34,15 +34,16 @@ public class GuildDao {
         if (result.getMatchedCount() > 0) {
             if (result.getModifiedCount() > 0) {
                 System.out.println("Successfully updated settings for guild: " + guildSettings.getGuildId() + ".");
+                return true;
             } else {
                 System.out.println("No changes were made to settings.");
+                return false;
             }
         } else {
             collection.insertOne(guildSettings);
             System.out.println("Successfully saved settings for guild: " + guildSettings.getGuildId() + ".");
+            return true;
         }
-
-        System.out.println(guildSettings);
     }
 
     public static GuildSettings loadDefaults(String guildId) {

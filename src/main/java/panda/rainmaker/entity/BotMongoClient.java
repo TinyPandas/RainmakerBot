@@ -25,12 +25,15 @@ public class BotMongoClient {
      * a connection to the db.
      */
     public static boolean isConnected;
+    public static boolean isTest;
 
     private static String dbUri;
     private static MongoClient mongoClient;
-    public BotMongoClient(final String dbUri) throws UnknownHostException {
+
+    public BotMongoClient(final String dbUri, final boolean test) throws UnknownHostException {
         BotMongoClient.dbUri = dbUri;
         isConnected = false;
+        isTest = test;
 
         getMongoClient();
 
@@ -59,6 +62,10 @@ public class BotMongoClient {
     }
 
     public static MongoDatabase getDatabase(final String dbName) {
+        if (isTest) {
+            return mongoClient.getDatabase(String.format("%s_test", dbName));
+        }
+
         return mongoClient.getDatabase(dbName);
     }
 
