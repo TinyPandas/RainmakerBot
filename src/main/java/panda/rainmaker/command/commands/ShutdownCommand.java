@@ -15,12 +15,12 @@ public class ShutdownCommand extends CommandObject {
 
     @Override
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
+        event.deferReply(true).queue();
         try {
             Member actor = getMemberFromSlashCommandEvent(event);
             if (!actor.getId().equals("169208961533345792")) throw new Exception("You do not have permission to do this.");
 
-            event.reply("Shutting down").setEphemeral(true).queue();
-            event.getJDA().shutdownNow();
+            event.getHook().editOriginal("Shutting down").queue(s -> event.getJDA().shutdownNow());
         } catch (Exception e) {
             failEvent(event, e.getMessage());
         }
