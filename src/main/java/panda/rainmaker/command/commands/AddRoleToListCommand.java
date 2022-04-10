@@ -9,6 +9,7 @@ import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.util.OptionDataDefs;
+import panda.rainmaker.util.PermissionMap;
 import panda.rainmaker.util.RoleGiverCache;
 
 import static panda.rainmaker.util.PandaUtil.*;
@@ -18,7 +19,7 @@ import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
 public class AddRoleToListCommand extends CommandObject {
 
     public AddRoleToListCommand() {
-        super("add-role-to-list", "Add a role to the specified list.");
+        super("add-role-to-list", "Add a role to the specified list.", true);
         addOptionData(OptionDataDefs.LIST.asOptionData());
         addOptionData(OptionDataDefs.ROLE.asOptionData());
         addOptionData(OptionDataDefs.EMOTE.asOptionData());
@@ -30,7 +31,10 @@ public class AddRoleToListCommand extends CommandObject {
 
         try {
             Member member = getMemberFromSlashCommandEvent(event);
-            memberHasPermission(member, Permission.MANAGE_CHANNEL);
+            PermissionMap permissionCommandPermissions = guildSettings.getPermissionsForCommand(this.getName());
+            boolean hasPermission = memberHasPermission(member, Permission.MANAGE_ROLES, permissionCommandPermissions);
+
+            if (!hasPermission) throw new Exception("Missing permission(s).");
             Guild guild = getGuildFromSlashCommandEvent(event);
             String listName = getStringFromOption("List name", event.getOption("list"));
             RoleGiverCache.validateList(guildSettings, guild, listName);

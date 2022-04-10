@@ -7,6 +7,7 @@ import net.dv8tion.jda.api.interactions.commands.Command;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.util.OptionDataDefs;
+import panda.rainmaker.util.PermissionMap;
 
 import java.util.stream.Collectors;
 
@@ -15,7 +16,7 @@ import static panda.rainmaker.util.PandaUtil.*;
 public class SetConfigValueCommand extends CommandObject {
 
     public SetConfigValueCommand() {
-        super("set-config-value", "Updates a config option");
+        super("set-config-value", "Updates a config option", true);
         addOptionData(OptionDataDefs.CONFIG_FIELD.asOptionData()
                 .addChoices(
                         GuildSettings.FIELDS.stream()
@@ -31,7 +32,10 @@ public class SetConfigValueCommand extends CommandObject {
 
         try {
             Member actor = getMemberFromSlashCommandEvent(event);
-            memberHasPermission(actor, Permission.MANAGE_SERVER);
+            PermissionMap permissionCommandPermissions = guildSettings.getPermissionsForCommand(this.getName());
+            boolean hasPermission = memberHasPermission(actor, Permission.MANAGE_SERVER, permissionCommandPermissions);
+
+            if (!hasPermission) throw new Exception("Missing permission(s).");
             String field = getStringFromOption("Config field", event.getOption("field"));
             String value = getStringFromOption("Config value", event.getOption("value"));
 

@@ -25,8 +25,25 @@ public class PandaUtil {
         }
     }
 
-    public static void memberHasPermission(Member member, Permission permission) throws Exception{
+    public static boolean memberHasPermission(Member member, Permission permission) throws Exception {
         if (!member.hasPermission(permission)) throw new Exception("Missing permission: " + permission);
+        return memberHasPermission(member, permission, new PermissionMap());
+    }
+
+    public static boolean memberHasPermission(Member member, Permission permission, PermissionMap permissionMap) {
+        boolean corePermission = member.hasPermission(permission);
+        boolean grantedPermission = permissionMap.getAllowedUserIds().contains(member.getId());
+
+        for (String roleId : permissionMap.getAllowedRoleIds()) {
+            for (Role role : member.getRoles()) {
+                if (role.getId().equals(roleId)) {
+                    grantedPermission = true;
+                    break;
+                }
+            }
+        }
+
+        return corePermission || grantedPermission;
     }
 
     public static Member getMemberFromSlashCommandEvent(SlashCommandInteractionEvent event) throws Exception {
