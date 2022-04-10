@@ -15,21 +15,23 @@ public class MessageListener extends ListenerAdapter {
         super.onMessageReceived(event);
         Guild guild = event.getGuild();
         Message message = event.getMessage();
-        TextChannel channel = event.getTextChannel();
-        Set<String> reactions = ChannelReactionCache.getReactionsForChannel(channel.getId());
+        if (event.getChannel().getType().equals(ChannelType.TEXT)) {
+            TextChannel channel = event.getTextChannel();
+            Set<String> reactions = ChannelReactionCache.getReactionsForChannel(channel.getId());
 
-        if (reactions.size() > 0) {
-            for (String reaction : reactions) {
-                boolean isEmoji = EmojiManager.isEmoji(reaction);
+            if (reactions.size() > 0) {
+                for (String reaction : reactions) {
+                    boolean isEmoji = EmojiManager.isEmoji(reaction);
 
-                if (isEmoji) {
-                    message.addReaction(reaction).queue();
-                } else {
-                    Emote emote = guild.getEmoteById(reaction);
-                    if (emote != null) {
-                        message.addReaction(emote).queue();
+                    if (isEmoji) {
+                        message.addReaction(reaction).queue();
                     } else {
-                        ChannelReactionCache.removeInvalidReactionFromChannel(channel.getId(), reaction);
+                        Emote emote = guild.getEmoteById(reaction);
+                        if (emote != null) {
+                            message.addReaction(emote).queue();
+                        } else {
+                            ChannelReactionCache.removeInvalidReactionFromChannel(channel.getId(), reaction);
+                        }
                     }
                 }
             }
