@@ -25,7 +25,7 @@ public class Commands {
         addCommandObject(new SetConfigValueCommand());
         addCommandObject(new ShutdownCommand());
         addCommandObject(new ViewConfigCommand());
-        // TODO addCommandObject(new ViewPermissionsCommand());
+        addCommandObject(new ViewPermissionsCommand());
         addCommandObject(new WikiCommand());
 
         // Loaded last so all commands exist in list.

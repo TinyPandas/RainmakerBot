@@ -64,7 +64,7 @@ public class PermissionCommand extends CommandObject {
 
             targetMap.updatePermission(member, role, toAdd);
 
-            passEvent(event,guildSettings.updatePermissionsForCommand(this.getName(), targetMap));
+            passEvent(event,guildSettings.updatePermissionsForCommand(targetCommand, targetMap));
         } catch (Exception e) {
             failEvent(event, e.getMessage());
         }

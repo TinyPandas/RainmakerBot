@@ -32,18 +32,9 @@ public class PandaUtil {
 
     public static boolean memberHasPermission(Member member, Permission permission, PermissionMap permissionMap) {
         boolean corePermission = member.hasPermission(permission);
-        boolean grantedPermission = permissionMap.getAllowedUserIds().contains(member.getId());
+        if (corePermission) return true;
 
-        for (String roleId : permissionMap.getAllowedRoleIds()) {
-            for (Role role : member.getRoles()) {
-                if (role.getId().equals(roleId)) {
-                    grantedPermission = true;
-                    break;
-                }
-            }
-        }
-
-        return corePermission || grantedPermission;
+        return permissionMap.fullPermissionCheckForMember(member);
     }
 
     public static Member getMemberFromSlashCommandEvent(SlashCommandInteractionEvent event) throws Exception {
