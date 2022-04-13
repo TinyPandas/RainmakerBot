@@ -1,17 +1,21 @@
 package panda.rainmaker.command.commands;
 
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.command.Commands;
 import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.util.OptionDataDefs;
 import panda.rainmaker.util.PermissionMap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static panda.rainmaker.util.PandaUtil.*;
@@ -39,6 +43,7 @@ public class PermissionCommand extends CommandObject {
         event.deferReply(true).queue();
 
         try {
+            Guild guild = getGuildFromSlashCommandEvent(event);
             Member actor = getMemberFromSlashCommandEvent(event);
             PermissionMap permissionCommandPermissions = guildSettings.getPermissionsForCommand(this.getName());
             boolean hasPermission = memberHasPermission(actor, Permission.MANAGE_SERVER, permissionCommandPermissions);
@@ -63,6 +68,17 @@ public class PermissionCommand extends CommandObject {
             } catch (IllegalStateException ignored) {}
 
             targetMap.updatePermission(member, role, toAdd);
+
+            guild.retrieveCommands().queue(commands -> {
+                for (Command command : commands) {
+                    if (command.getName().equals(targetCommand)) {
+                        List<CommandPrivilege> generatedPrivileges = new ArrayList<>();
+                        generatedPrivileges.add(CommandPrivilege.enableUser(guild.getOwnerId()));
+                        generatedPrivileges.addAll(targetMap.generatePrivileges());
+                        command.updatePrivileges(guild, generatedPrivileges).queue();
+                    }
+                }
+            });
 
             passEvent(event,guildSettings.updatePermissionsForCommand(targetCommand, targetMap));
         } catch (Exception e) {

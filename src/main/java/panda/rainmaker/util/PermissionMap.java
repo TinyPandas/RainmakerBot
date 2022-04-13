@@ -2,107 +2,124 @@ package panda.rainmaker.util;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege;
 
 import java.util.*;
 
 public class PermissionMap {
 
-    private Set<String> allowedRoleIds = new HashSet<>();
-    private Set<String> allowedUserIds = new HashSet<>();
+    private Set<String> allowedRoles;
+    private Set<String> disallowedRoles;
+    private Set<String> allowedUsers;
+    private Set<String> disallowedUsers;
 
-    private final HashMap<String, Boolean> roleAccess = new HashMap<>();
-    private final HashMap<String, Boolean> userAccess = new HashMap<>();
+    public void setAllowedRoles(Set<String> allowedRoles) {
+        this.allowedRoles = allowedRoles;
+    }
+
+    public void setDisallowedRoles(Set<String> disallowedRoles) {
+        this.disallowedRoles = disallowedRoles;
+    }
+
+    public void setAllowedUsers(Set<String> allowedUsers) {
+        this.allowedUsers = allowedUsers;
+    }
+
+    public void setDisallowedUsers(Set<String> disallowedUsers) {
+        this.disallowedUsers = disallowedUsers;
+    }
+
+    private void check() {
+        if (allowedRoles == null) allowedRoles = new HashSet<>();
+        if (disallowedRoles == null) disallowedRoles = new HashSet<>();
+        if (allowedUsers == null) allowedUsers = new HashSet<>();
+        if (disallowedUsers == null) disallowedUsers = new HashSet<>();
+    }
 
     public Set<String> getAllowedRoles() {
-        Set<String> allowedRoles = new HashSet<>();
-
-        for (Map.Entry<String, Boolean> entry : roleAccess.entrySet()) {
-            if (entry.getValue()) {
-                allowedRoles.add(entry.getKey());
-            }
-        }
-
+        check();
         return allowedRoles;
     }
 
     public Set<String> getDisallowedRoles() {
-        Set<String> disallowedRoles = new HashSet<>();
-
-        for (Map.Entry<String, Boolean> entry : roleAccess.entrySet()) {
-            if (!entry.getValue()) {
-                disallowedRoles.add(entry.getKey());
-            }
-        }
-
+        check();
         return disallowedRoles;
     }
 
     public Set<String> getAllowedUsers() {
-        Set<String> allowedUsers = new HashSet<>();
-
-        for (Map.Entry<String, Boolean> entry : userAccess.entrySet()) {
-            if (entry.getValue()) {
-                allowedUsers.add(entry.getKey());
-            }
-        }
-
+        check();
         return allowedUsers;
     }
 
     public Set<String> getDisallowedUsers() {
-        Set<String> disallowedUsers = new HashSet<>();
-
-        for (Map.Entry<String, Boolean> entry : userAccess.entrySet()) {
-            if (!entry.getValue()) {
-                disallowedUsers.add(entry.getKey());
-            }
-        }
-
+        check();
         return disallowedUsers;
     }
 
-    public void setRoleAccess(String roleId, boolean canAccess) {
-        roleAccess.put(roleId, canAccess);
+    public void updateRoleAccess(String roleId, boolean canAccess) {
+        if (canAccess) {
+            disallowedRoles.remove(roleId);
+            allowedRoles.add(roleId);
+        } else {
+            disallowedRoles.add(roleId);
+            allowedRoles.remove(roleId);
+        }
     }
 
-    public void setUserAccess(String roleId, boolean canAccess) {
-        userAccess.put(roleId, canAccess);
-    }
-
-    public Set<String> getAllowedRoleIds() {
-        return allowedRoleIds;
-    }
-
-    public Set<String> getAllowedUserIds() {
-        return allowedUserIds;
+    public void updateUserAccess(String userId, boolean canAccess) {
+        if (canAccess) {
+            disallowedUsers.remove(userId);
+            allowedUsers.add(userId);
+        } else {
+            disallowedUsers.add(userId);
+            allowedUsers.remove(userId);
+        }
     }
 
     public void updatePermission(Member member, Role role, boolean toAdd) {
+        check();
         if (toAdd) {
-            if (member != null) setUserAccess(member.getId(), true);
-            if (role != null) setRoleAccess(role.getId(), true);
+            if (member != null) updateUserAccess(member.getId(), true);
+            if (role != null) updateRoleAccess(role.getId(), true);
         } else {
-            if (member != null) setUserAccess(member.getId(), false);
-            if (role != null) setRoleAccess(role.getId(), false);
+            if (member != null) updateUserAccess(member.getId(), false);
+            if (role != null) updateRoleAccess(role.getId(), false);
         }
     }
 
     public boolean fullPermissionCheckForMember(Member member) {
-        Boolean userState = userAccess.get(member.getId());
-        if (userState != null && userState) return true;
+        check();
+        String memberId = member.getId();
+        if (disallowedUsers.contains(memberId)) return false;
+        if (allowedUsers.contains(memberId)) return true;
 
         boolean roleState = false;
         int highestRole = -1;
 
         for (Role r : member.getRoles()) {
-            if (roleAccess.containsKey(r.getId())) {
-                if (r.getPosition() > highestRole) {
-                    roleState = roleAccess.get(r.getId());
-                    highestRole = r.getPosition();
-                }
+            String roleId = r.getId();
+            int position = r.getPosition();
+            if (getAllowedRoles().contains(roleId) && position > highestRole) {
+                roleState = true;
+                highestRole = position;
+            }
+            if (getDisallowedRoles().contains(roleId) && position > highestRole) {
+                roleState = false;
+                highestRole = position;
             }
         }
 
         return roleState;
+    }
+
+    public List<CommandPrivilege> generatePrivileges() {
+        check();
+        List<CommandPrivilege> generatedPrivileges = new ArrayList<>();
+        for (String allowedRoleId : getAllowedRoles()) generatedPrivileges.add(CommandPrivilege.enableRole(allowedRoleId));
+        for (String disallowedRoleId : getDisallowedRoles()) generatedPrivileges.add(CommandPrivilege.enableRole(disallowedRoleId));
+        for (String allowedUserId : getAllowedUsers()) generatedPrivileges.add(CommandPrivilege.enableRole(allowedUserId));
+        for (String disallowedUserId : getDisallowedUsers()) generatedPrivileges.add(CommandPrivilege.enableRole(disallowedUserId));
+
+        return generatedPrivileges;
     }
 }
