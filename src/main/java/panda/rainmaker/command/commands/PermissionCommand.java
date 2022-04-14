@@ -1,6 +1,5 @@
 package panda.rainmaker.command.commands;
 
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
@@ -18,7 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static panda.rainmaker.util.PandaUtil.*;
+import static panda.rainmaker.util.PandaUtil.getGuildFromSlashCommandEvent;
+import static panda.rainmaker.util.PandaUtil.getStringFromOption;
 
 public class PermissionCommand extends CommandObject {
 
@@ -44,11 +44,6 @@ public class PermissionCommand extends CommandObject {
 
         try {
             Guild guild = getGuildFromSlashCommandEvent(event);
-            Member actor = getMemberFromSlashCommandEvent(event);
-            PermissionMap permissionCommandPermissions = guildSettings.getPermissionsForCommand(this.getName());
-            boolean hasPermission = memberHasPermission(actor, Permission.MANAGE_SERVER, permissionCommandPermissions);
-
-            if (!hasPermission) throw new Exception("Missing permission(s).");
 
             String targetCommand = getStringFromOption("Command target", event.getOption("target"));
             String action = getStringFromOption("Permission action", event.getOption("action"));

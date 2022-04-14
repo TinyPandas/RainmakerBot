@@ -12,7 +12,6 @@ import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.util.ChannelReactionCache;
-import panda.rainmaker.util.PermissionMap;
 
 import static panda.rainmaker.util.PandaUtil.*;
 import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
@@ -37,11 +36,7 @@ public class DisableReactionsCommand extends CommandObject {
             Guild guild = getGuildFromSlashCommandEvent(event);
             Member selfMember = getSelfMemberFromGuild(guild);
             memberHasPermission(selfMember, Permission.MESSAGE_ADD_REACTION);
-            Member member = getMemberFromSlashCommandEvent(event);
-            PermissionMap permissionCommandPermissions = guildSettings.getPermissionsForCommand(this.getName());
-            boolean hasPermission = memberHasPermission(member, Permission.MANAGE_ROLES, permissionCommandPermissions);
 
-            if (!hasPermission) throw new Exception("Missing permission(s).");
             TextChannel channel = getTextChannelFromOption(event.getOption("channel"));
             ReactionObject reactionObject = getReactionCacheValue(
                     guild,

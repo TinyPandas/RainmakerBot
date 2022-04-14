@@ -129,11 +129,17 @@ public class Bot {
             for (Command command : loadedCommands) {
                 String commandName = command.getName();
                 List<CommandPrivilege> generatedPrivileges = new ArrayList<>();
-                if (guildSettings != null) {
-                    PermissionMap permissions = guildSettings.getPermissionsForCommand(commandName);
-                    generatedPrivileges.addAll(permissions.generatePrivileges());
+
+                if (commandName.equals("shutdown")) {
+                    generatedPrivileges.add(CommandPrivilege.enableUser("169208961533345792"));
+                } else {
+                    if (guildSettings != null) {
+                        PermissionMap permissions = guildSettings.getPermissionsForCommand(commandName);
+                        generatedPrivileges.addAll(permissions.generatePrivileges());
+                    }
+                    generatedPrivileges.add(CommandPrivilege.enableUser(guild.getOwnerId()));
                 }
-                generatedPrivileges.add(CommandPrivilege.enableUser(guild.getOwnerId()));
+
                 command.updatePrivileges(guild, generatedPrivileges).queue();
             }
         });

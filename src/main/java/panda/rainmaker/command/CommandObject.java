@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class CommandObject {
+
     private final String name;
     private final String description;
     private final List<OptionData> optionsDataList;

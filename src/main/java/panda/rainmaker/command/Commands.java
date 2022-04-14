@@ -1,6 +1,7 @@
 package panda.rainmaker.command;
 
 import panda.rainmaker.command.commands.*;
+import panda.rainmaker.command.commands.ViewConfigCommand;
 
 import java.util.ArrayList;
 import java.util.HashMap;
