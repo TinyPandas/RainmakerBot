@@ -5,20 +5,17 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.Command;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.command.Commands;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.util.OptionDataDefs;
 import panda.rainmaker.util.PermissionMap;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static panda.rainmaker.util.PandaUtil.getGuildFromSlashCommandEvent;
-import static panda.rainmaker.util.PandaUtil.getStringFromOption;
 
 public class PermissionCommand extends CommandObject {
 
@@ -42,42 +39,37 @@ public class PermissionCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        String targetCommand = (String) eventData.getOption("target").getValue();
+        String action = (String) eventData.getOption("action").getValue();
+        boolean toAdd = action.equals("add");
+
+        PermissionMap targetMap = guildSettings.getPermissionsForCommand(targetCommand);
+        Member member = null;
+        Role role = null;
+
         try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
+            member = (Member) eventData.getOption("entity").getValue();
+        } catch (ClassCastException ignored) {}
 
-            String targetCommand = getStringFromOption("Command target", event.getOption("target"));
-            String action = getStringFromOption("Permission action", event.getOption("action"));
+        try {
+            role = (Role) eventData.getOption("entity").getValue();
+        } catch(ClassCastException ignored) {}
 
-            boolean toAdd = action.equals("add");
+        targetMap.updatePermission(member, role, toAdd);
 
-            OptionMapping entityOption = event.getOption("entity");
-            if (entityOption == null) throw new Exception("Entity was not provided.");
-
-            PermissionMap targetMap = guildSettings.getPermissionsForCommand(targetCommand);
-            Member member = null;
-            Role role = null;
-
-            try {
-                member = entityOption.getAsMember();
-                role = entityOption.getAsRole();
-            } catch (IllegalStateException ignored) {}
-
-            targetMap.updatePermission(member, role, toAdd);
-
-            guild.retrieveCommands().queue(commands -> {
-                for (Command command : commands) {
-                    if (command.getName().equals(targetCommand)) {
-                        List<CommandPrivilege> generatedPrivileges = new ArrayList<>();
-                        generatedPrivileges.add(CommandPrivilege.enableUser(guild.getOwnerId()));
-                        generatedPrivileges.addAll(targetMap.generatePrivileges());
-                        command.updatePrivileges(guild, generatedPrivileges).queue();
-                    }
+        guild.retrieveCommands().queue(commands -> {
+            for (Command command : commands) {
+                if (command.getName().equals(targetCommand)) {
+                    List<CommandPrivilege> generatedPrivileges = new ArrayList<>();
+                    generatedPrivileges.add(CommandPrivilege.enableUser(guild.getOwnerId()));
+                    generatedPrivileges.addAll(targetMap.generatePrivileges());
+                    command.updatePrivileges(guild, generatedPrivileges).queue();
                 }
-            });
+            }
+        });
 
-            passEvent(event,guildSettings.updatePermissionsForCommand(targetCommand, targetMap));
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
+        event.getHook().editOriginal(guildSettings.updatePermissionsForCommand(targetCommand, targetMap)).queue();
     }
 }

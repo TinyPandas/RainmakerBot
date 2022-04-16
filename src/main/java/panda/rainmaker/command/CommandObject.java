@@ -1,13 +1,19 @@
 package panda.rainmaker.command;
 
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public abstract class CommandObject {
@@ -71,5 +77,37 @@ public abstract class CommandObject {
 
     public boolean getIsPermissible() {
         return isPermissible;
+    }
+
+    /**
+     * Generates an EventData object for an Event. This will
+     * populate the elements required by all commands. If the
+     * event's options are less than a commands OptionDataList
+     * it will return null.
+     * @param event - The SlashCommandInteractionEvent in effect.
+     * @return Populated EventData containing validated fields.
+     */
+    public EventData validate(SlashCommandInteractionEvent event) {
+        List<OptionMapping> options = event.getOptions();
+        if (options.size() < optionsDataList.size()) return null;
+
+        HashMap<String, OptionMapping> optionMapping = new HashMap<>();
+        for (OptionMapping option : options) {
+            optionMapping.put(option.getName(), option);
+        }
+
+        Guild guild = event.getGuild();
+        TextChannel activeChannel = event.getTextChannel();
+        Member actor = event.getMember();
+        Member bot = null;
+        if (guild != null) bot = guild.getSelfMember();
+
+        return new EventData.Builder()
+                .setActor(actor)
+                .setBot(bot)
+                .setGuild(guild)
+                .setActiveChannel(activeChannel)
+                .setOptions(optionMapping)
+                .build();
     }
 }
