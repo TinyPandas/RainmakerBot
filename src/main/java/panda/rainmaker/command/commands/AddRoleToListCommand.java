@@ -5,13 +5,11 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.util.OptionDataDefs;
-import panda.rainmaker.util.RoleGiverCache;
 
-import static panda.rainmaker.util.PandaUtil.*;
-import static panda.rainmaker.util.RoleGiverCache.addRoleToList;
-import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
+import static panda.rainmaker.util.RoleGiverCache.*;
 
 public class AddRoleToListCommand extends CommandObject {
 
@@ -26,17 +24,19 @@ public class AddRoleToListCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
-            String listName = getStringFromOption("List name", event.getOption("list"));
-            RoleGiverCache.validateList(guildSettings, guild, listName);
-            String reaction = getStringFromOption("Emote", event.getOption("emote"));
-            ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
-            Role role = getRoleFromOption(event.getOption("role"));
-            String addRoleResult = addRoleToList(guildSettings, guild, listName, role, reactionObject);
-            passEvent(event, addRoleResult);
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        String listName = (String) eventData.getOption("list").getValue();
+        String reaction = (String) eventData.getOption("emote").getValue();
+        Role role = (Role) eventData.getOption("role").getValue();
+        ReactionObject reactionObject = getReactionCacheValue(guild, reaction);
+
+        if (isInvalidList(guildSettings, guild, listName)) {
+            failEvent(event, String.format("List with name `%s` does not exist.", listName));
+            return;
         }
+
+        String addResult = addRoleToList(guildSettings, guild, listName, role, reactionObject);
+        passEvent(event, addResult);
     }
 }

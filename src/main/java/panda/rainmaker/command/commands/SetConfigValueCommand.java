@@ -4,11 +4,10 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.interactions.commands.Command;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.util.OptionDataDefs;
 
 import java.util.stream.Collectors;
-
-import static panda.rainmaker.util.PandaUtil.getStringFromOption;
 
 public class SetConfigValueCommand extends CommandObject {
 
@@ -27,14 +26,13 @@ public class SetConfigValueCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            String field = getStringFromOption("Config field", event.getOption("field"));
-            String value = getStringFromOption("Config value", event.getOption("value"));
+        EventData eventData = super.validate(event);
+        String field = (String) eventData.getOption("field").getValue();
+        String value = (String) eventData.getOption("value").getValue();
 
-            if (!GuildSettings.FIELDS.contains(field)) throw new Exception(field + " is not a valid config field.");
-            passEvent(event, guildSettings.updateFieldWithValue(field, value));
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
+        if (!GuildSettings.FIELDS.contains(field))
+            failEvent(event, String.format("%s is not a valid field.", field));
+
+        passEvent(event, guildSettings.updateFieldWithValue(field, value));
     }
 }

@@ -1,6 +1,5 @@
 package panda.rainmaker.command.commands;
 
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.ChannelType;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
@@ -10,10 +9,11 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.entity.ReactionObject;
 import panda.rainmaker.util.ChannelReactionCache;
 
-import static panda.rainmaker.util.PandaUtil.*;
+import static panda.rainmaker.util.PandaUtil.getDisplayResultForRemoveReactionFromReactionObject;
 import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
 
 public class DisableReactionsCommand extends CommandObject {
@@ -32,21 +32,15 @@ public class DisableReactionsCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
-            Member selfMember = getSelfMemberFromGuild(guild);
-            memberHasPermission(selfMember, Permission.MESSAGE_ADD_REACTION);
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        Member bot = eventData.getBot();
+        TextChannel channel = (TextChannel) eventData.getOption("channel").getValue();
+        String emote = (String) eventData.getOption("emote").getValue();
+        ReactionObject reactionObject = getReactionCacheValue(guild, emote);
+        ChannelReactionCache.removeReactionFromChannel(channel.getId(), reactionObject);
+        String removedReactionDisplay = getDisplayResultForRemoveReactionFromReactionObject(guild, reactionObject);
 
-            TextChannel channel = getTextChannelFromOption(event.getOption("channel"));
-            ReactionObject reactionObject = getReactionCacheValue(
-                    guild,
-                    getStringFromOption("Emote", event.getOption("emote"))
-            );
-            ChannelReactionCache.removeReactionFromChannel(channel.getId(), reactionObject);
-            passEvent(event, String.format(getDisplayResultForRemoveReactionFromReactionObject(guild, reactionObject),
-                    channel.getAsMention()));
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
+        passEvent(event, String.format(removedReactionDisplay, channel.getAsMention()));
     }
 }

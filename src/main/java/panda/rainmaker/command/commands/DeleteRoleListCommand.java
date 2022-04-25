@@ -4,10 +4,9 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.util.OptionDataDefs;
 
-import static panda.rainmaker.util.PandaUtil.getGuildFromSlashCommandEvent;
-import static panda.rainmaker.util.PandaUtil.getStringFromOption;
 import static panda.rainmaker.util.RoleGiverCache.deleteRoleList;
 
 public class DeleteRoleListCommand extends CommandObject {
@@ -21,13 +20,10 @@ public class DeleteRoleListCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
-            String listName = getStringFromOption("List name", event.getOption("list"));
-            String deleteResult = deleteRoleList(guildSettings, guild, listName);
-            passEvent(event, deleteResult);
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        String listName = (String) eventData.getOption("list").getValue();
+        String deleteResult = deleteRoleList(guildSettings, guild, listName);
+        passEvent(event, deleteResult);
     }
 }

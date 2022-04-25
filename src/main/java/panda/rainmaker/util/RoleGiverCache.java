@@ -71,8 +71,8 @@ public class RoleGiverCache {
     }
 
     public static String addRoleToList(GuildSettings guildSettings, Guild guild, String listName, Role role,
-                                       ReactionObject reactionObject) throws Exception {
-        if (reactionObject == null) throw new Exception("ReactionObject was null.");
+                                       ReactionObject reactionObject) {
+        if (reactionObject == null) return "ReactionObject was null.";
         String roleId = role.getId();
         String reactionId = reactionObject.getValue();
         String reactionUID = getUID(guild, getUID(listName, reactionId));
@@ -184,7 +184,7 @@ public class RoleGiverCache {
         return null;
     }
 
-    public static ReactionObject getReactionCacheValue(Guild guild, String reaction) throws Exception {
+    public static ReactionObject getReactionCacheValue(Guild guild, String reaction) {
         List<String> unicodeEmojis = EmojiParser.extractEmojis(reaction);
 
         if (unicodeEmojis.size() > 0) {

@@ -11,9 +11,8 @@ public class ChannelReactionCache {
         return reactionsInChannels.getOrDefault(channelId, new HashSet<>());
     }
 
-    public static void addReactionToChannel(final String channelId, final ReactionObject reaction) throws Exception {
-        if (reaction == null) throw new Exception("No ReactionObject provided.");
-        System.out.printf("Adding %s to %s%n", reaction, channelId);
+    public static boolean addReactionToChannel(final String channelId, final ReactionObject reaction) {
+        if (reaction == null) return false;
         Set<String> reactionList = getReactionsForChannel(channelId);
         reactionList.add(reaction.getValue());
         if (reactionsInChannels.containsKey(channelId)) {
@@ -21,6 +20,7 @@ public class ChannelReactionCache {
         } else {
             reactionsInChannels.put(channelId, reactionList);
         }
+        return true;
     }
 
     public static void removeReactionsInChannel(final String channelId) {

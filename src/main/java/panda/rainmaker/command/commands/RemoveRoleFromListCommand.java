@@ -5,10 +5,10 @@ import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.util.OptionDataDefs;
-import panda.rainmaker.util.RoleGiverCache;
 
-import static panda.rainmaker.util.PandaUtil.*;
+import static panda.rainmaker.util.RoleGiverCache.isInvalidList;
 import static panda.rainmaker.util.RoleGiverCache.removeRoleFromList;
 
 public class RemoveRoleFromListCommand extends CommandObject {
@@ -23,15 +23,17 @@ public class RemoveRoleFromListCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
-            String listName = getStringFromOption("List name", event.getOption("list"));
-            RoleGiverCache.validateList(guildSettings, guild, listName);
-            Role role = getRoleFromOption(event.getOption("role"));
-            String removeRoleResult = removeRoleFromList(guildSettings, guild, listName, role);
-            passEvent(event, removeRoleResult);
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        String listName = (String) eventData.getOption("list").getValue();
+        Role role = (Role) eventData.getOption("role").getValue();
+
+        if (isInvalidList(guildSettings, guild, listName)) {
+            failEvent(event, String.format("List with name `%s` does not exist.", listName));
+            return;
         }
+
+        String removeResult = removeRoleFromList(guildSettings, guild, listName, role);
+        passEvent(event, removeResult);
     }
 }

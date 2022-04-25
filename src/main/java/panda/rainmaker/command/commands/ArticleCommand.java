@@ -9,6 +9,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.http.HttpRequest;
 import panda.rainmaker.http.HttpResult;
 import panda.rainmaker.rda_article.ArticleResponse;
@@ -32,16 +33,9 @@ public class ArticleCommand extends CommandObject {
 
     @Override
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
-        String titleQuery = null, authorQuery = null;
-
-        try {
-            titleQuery = getStringFromOption("Title query", event.getOption("title"));
-            try {
-                authorQuery = getStringFromOption("Author filter", event.getOption("author"));
-            } catch (Exception ignored) {}
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
+        EventData eventData = super.validate(event);
+        String titleQuery = (String) eventData.getOption("title").getValue();
+        String authorQuery = (String) eventData.getOption("author").getValue();
 
         HttpResult result = HttpRequest.getResult(globalSettings.getRsa_link(), 0, 0);
         if (result.isFailed()) {
@@ -51,7 +45,7 @@ public class ArticleCommand extends CommandObject {
 
         if (articleResponse == null) {
             try {
-                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<List<ArticleResponseItem>>() { });
+                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<>() { });
                 System.out.println("Loaded " + items.size() + " articles.");
                 articleResponse = new ArticleResponse();
                 articleResponse.setArticleResponse(items);

@@ -89,7 +89,11 @@ public abstract class CommandObject {
      */
     public EventData validate(SlashCommandInteractionEvent event) {
         List<OptionMapping> options = event.getOptions();
-        if (options.size() < optionsDataList.size()) return null;
+        if (options.size() < optionsDataList.size()) {
+            event.getHook().editOriginal(String.format("Mismatched arguments provided. Expected %s, Got %s.",
+                    optionsDataList.size(), options.size())).queue();
+            return null;
+        }
 
         HashMap<String, OptionMapping> optionMapping = new HashMap<>();
         for (OptionMapping option : options) {

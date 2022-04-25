@@ -6,9 +6,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
-
-import static panda.rainmaker.util.PandaUtil.getGuildFromSlashCommandEvent;
-import static panda.rainmaker.util.PandaUtil.getMemberFromSlashCommandEvent;
+import panda.rainmaker.entity.EventData;
 
 public class ViewConfigCommand extends CommandObject {
 
@@ -20,26 +18,23 @@ public class ViewConfigCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
-            Member actor = getMemberFromSlashCommandEvent(event);
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        Member actor = eventData.getActor();
 
-            EmbedBuilder builder = new EmbedBuilder()
-                    .setTitle("Config for " + guild.getName())
-                    .setAuthor(actor.getEffectiveName());
+        EmbedBuilder builder = new EmbedBuilder()
+                .setTitle("Config for " + guild.getName())
+                .setAuthor(actor.getEffectiveName());
 
-            GuildSettings.FIELDS.forEach(field -> {
-                String value = guildSettings.getValueForField(field);
-                if (value == null) {
-                    value = "\u200b";
-                }
+        GuildSettings.FIELDS.forEach(field -> {
+            String value = guildSettings.getValueForField(field);
+            if (value == null) {
+                value = "\u200b";
+            }
 
-                builder.addField(field, value, true);
-            });
+            builder.addField(field, value, true);
+        });
 
-            passEvent(event, "Displaying config.", builder.build());
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
+        passEvent(event, "Displaying config.", builder.build());
     }
 }

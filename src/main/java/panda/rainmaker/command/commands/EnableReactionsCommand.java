@@ -10,10 +10,11 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.entity.ReactionObject;
-import panda.rainmaker.util.ChannelReactionCache;
 
-import static panda.rainmaker.util.PandaUtil.*;
+import static panda.rainmaker.util.ChannelReactionCache.addReactionToChannel;
+import static panda.rainmaker.util.PandaUtil.memberHasPermission;
 import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
 
 public class EnableReactionsCommand extends CommandObject {
@@ -33,22 +34,22 @@ public class EnableReactionsCommand extends CommandObject {
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
         event.deferReply(true).queue();
 
-        try {
-            Guild guild = getGuildFromSlashCommandEvent(event);
-            Member selfMember = getSelfMemberFromGuild(guild);
-            memberHasPermission(selfMember, Permission.MESSAGE_ADD_REACTION);
+        EventData eventData = super.validate(event);
+        Guild guild = eventData.getGuild();
+        Member bot = eventData.getBot();
+        if (!memberHasPermission(bot, Permission.MESSAGE_ADD_REACTION))
+            failEvent(event, "Bot missing permission: " + Permission.MESSAGE_ADD_REACTION);
 
-            TextChannel channel = getTextChannelFromOption(event.getOption("channel"));
-            ReactionObject reactionObject = getReactionCacheValue(
-                    guild,
-                    getStringFromOption("Emote", event.getOption("emote"))
-            );
-
-            ChannelReactionCache.addReactionToChannel(channel.getId(), reactionObject);
+        TextChannel channel = (TextChannel) eventData.getOption("channel").getValue();
+        String emote = (String) eventData.getOption("emote").getValue();
+        ReactionObject reactionObject = getReactionCacheValue(guild, emote);
+        boolean result = addReactionToChannel(channel.getId(), reactionObject);
+        if (result) {
             passEvent(event, String.format("Successfully enabled %s in %s.",
                     reactionObject.getDisplay(guild), channel.getAsMention()));
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
+        } else {
+            passEvent(event, String.format("Failed to enable %s in %s.",
+                    emote, channel.getAsMention()));
         }
     }
 }

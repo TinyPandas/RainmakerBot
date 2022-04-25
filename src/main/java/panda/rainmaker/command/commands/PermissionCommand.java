@@ -40,6 +40,7 @@ public class PermissionCommand extends CommandObject {
         event.deferReply(true).queue();
 
         EventData eventData = super.validate(event);
+        if (eventData == null) return;
         Guild guild = eventData.getGuild();
         String targetCommand = (String) eventData.getOption("target").getValue();
         String action = (String) eventData.getOption("action").getValue();
@@ -70,6 +71,7 @@ public class PermissionCommand extends CommandObject {
             }
         });
 
-        event.getHook().editOriginal(guildSettings.updatePermissionsForCommand(targetCommand, targetMap)).queue();
+        String updateResult = guildSettings.updatePermissionsForCommand(targetCommand, targetMap);
+        passEvent(event, updateResult);
     }
 }

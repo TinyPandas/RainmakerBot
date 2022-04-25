@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.database.models.GuildSettings;
+import panda.rainmaker.entity.EventData;
 import panda.rainmaker.http.HttpRequest;
 import panda.rainmaker.http.HttpResult;
 import panda.rainmaker.wiki.RecordItem;
@@ -37,23 +38,12 @@ public class WikiCommand extends CommandObject {
 
     @Override
     public void execute(SlashCommandInteractionEvent event, GuildSettings guildSettings) {
-        String searchQuery = null, category = null;
+        EventData eventData = super.validate(event);
+        String searchQuery = (String) eventData.getOption("query").getValue();
+        String category = (String) eventData.getOption("category").getValue();
 
-        try {
-            searchQuery = getStringFromOption("Search query", event.getOption("query"));
-            try {
-                category = getStringFromOption("Category", event.getOption("category"));
-            } catch (Exception e) {
-                category = "";
-            }
-        } catch (Exception e) {
-            failEvent(event, e.getMessage());
-        }
-
-        String finalSearchQuery = searchQuery;
-        String finalCategory = category;
         event.reply("Searching...").queue(msg -> {
-            String urlQuery = finalSearchQuery.replaceAll("\\s", "%20");
+            String urlQuery = searchQuery.replaceAll("\\s", "%20");
             String call = globalSettings.getWiki_prefix() + urlQuery + globalSettings.getWiki_suffix();
 
             HttpResult result = HttpRequest.getResult(call, 45, 1);
@@ -77,10 +67,10 @@ public class WikiCommand extends CommandObject {
                 Member member = event.getMember();
 
                 EmbedBuilder builder = new EmbedBuilder();
-                builder.setTitle("Results for " + finalSearchQuery);
+                builder.setTitle("Results for " + searchQuery);
                 builder.setDescription(member != null ? member.getEffectiveName() : event.getUser().getName());
 
-                if (finalCategory == null || finalCategory.length() == 0) {
+                if (category == null || category.length() == 0) {
                     Map<String, RecordItem> resultList = records.getFirstOfEach();
 
                     for (Map.Entry<String, RecordItem> recordItem : resultList.entrySet()) {
@@ -103,7 +93,7 @@ public class WikiCommand extends CommandObject {
                                 display, false);
                     }
                 } else {
-                    List<RecordItem> categoryList = records.getCategory(finalCategory);
+                    List<RecordItem> categoryList = records.getCategory(category);
 
                     for (RecordItem recordItem : categoryList) {
                         String summary = recordItem.getSummary().replaceAll("<.*?>", "");
@@ -120,7 +110,7 @@ public class WikiCommand extends CommandObject {
 
                         String display = String.format("[%s](%s)", summary, url);
 
-                        builder.addField(String.format("[%s]: %s", finalCategory, recordItem.getDisplayTitle()),
+                        builder.addField(String.format("[%s]: %s", category, recordItem.getDisplayTitle()),
                                 display, false);
                     }
                 }
