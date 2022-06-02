@@ -6,7 +6,7 @@ plugins {
 
 mainClassName = 'panda.rainmaker.Bot'
 version '1.0'
-sourceCompatibility = 1.9
+sourceCompatibility = 1.11
 
 repositories {
     maven {
