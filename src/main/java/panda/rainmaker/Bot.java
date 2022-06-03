@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.events.guild.GuildJoinEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData;
-import net.dv8tion.jda.api.interactions.commands.privileges.CommandPrivilege;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
@@ -17,22 +16,20 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.jetbrains.annotations.NotNull;
 import panda.rainmaker.command.CommandObject;
 import panda.rainmaker.command.Commands;
-import panda.rainmaker.database.GuildDao;
-import panda.rainmaker.database.models.GuildSettings;
 import panda.rainmaker.entity.BotMongoClient;
 import panda.rainmaker.listeners.MessageListener;
 import panda.rainmaker.listeners.ReactionListener;
 import panda.rainmaker.listeners.SlashCommandListener;
-import panda.rainmaker.util.PermissionMap;
 
 import javax.security.auth.login.LoginException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class Bot {
+
+    private final String BOT_HOME_GUILD_ID = "546033322401464320";
 
     public Bot(final String token, final String dbURI, final boolean test) throws LoginException, InterruptedException {
         JDABuilder builder = JDABuilder.createDefault(token);
@@ -115,10 +112,9 @@ public class Bot {
         new BotMongoClient(dbURI, test);
     }
 
-    private static void setupGuild(Guild guild) {
+    private void setupGuild(Guild guild) {
         System.out.println("Setting up commands for: " + guild.getId());
         CommandListUpdateAction commands = guild.updateCommands();
-        GuildSettings guildSettings = GuildDao.fetchGuildSettings(guild.getId());
 
         List<CommandObject> commandObjectList = Commands.getCommands();
         List<SlashCommandData> slashCommandData = commandObjectList.stream()
@@ -128,19 +124,10 @@ public class Bot {
         commands.addCommands(slashCommandData).queue(loadedCommands -> {
             for (Command command : loadedCommands) {
                 String commandName = command.getName();
-                List<CommandPrivilege> generatedPrivileges = new ArrayList<>();
 
-                if (commandName.equals("shutdown")) {
-                    generatedPrivileges.add(CommandPrivilege.enableUser("169208961533345792"));
-                } else {
-                    if (guildSettings != null) {
-                        PermissionMap permissions = guildSettings.getPermissionsForCommand(commandName);
-                        generatedPrivileges.addAll(permissions.generatePrivileges());
-                    }
-                    generatedPrivileges.add(CommandPrivilege.enableUser(guild.getOwnerId()));
+                if (commandName.equals("shutdown") && !guild.getId().equals(BOT_HOME_GUILD_ID)) {
+                    command.delete().queue();
                 }
-
-                command.updatePrivileges(guild, generatedPrivileges).queue();
             }
         });
     }

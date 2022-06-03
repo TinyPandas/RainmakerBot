@@ -35,7 +35,7 @@ public class DisableReactionsCommand extends CommandObject {
         try {
             Guild guild = getGuildFromSlashCommandEvent(event);
             Member selfMember = getSelfMemberFromGuild(guild);
-            memberHasPermission(selfMember, Permission.MESSAGE_ADD_REACTION);
+            checkMemberPermission(selfMember, Permission.MESSAGE_ADD_REACTION);
 
             TextChannel channel = getTextChannelFromOption(event.getOption("channel"));
             ReactionObject reactionObject = getReactionCacheValue(

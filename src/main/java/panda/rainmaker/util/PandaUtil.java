@@ -25,16 +25,8 @@ public class PandaUtil {
         }
     }
 
-    public static boolean memberHasPermission(Member member, Permission permission) throws Exception {
+    public static void checkMemberPermission(Member member, Permission permission) throws Exception {
         if (!member.hasPermission(permission)) throw new Exception("Missing permission: " + permission);
-        return memberHasPermission(member, permission, new PermissionMap());
-    }
-
-    public static boolean memberHasPermission(Member member, Permission permission, PermissionMap permissionMap) {
-        boolean corePermission = member.hasPermission(permission);
-        if (corePermission) return true;
-
-        return permissionMap.fullPermissionCheckForMember(member);
     }
 
     public static Member getMemberFromSlashCommandEvent(SlashCommandInteractionEvent event) throws Exception {

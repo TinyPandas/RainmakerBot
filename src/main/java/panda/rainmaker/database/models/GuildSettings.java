@@ -2,7 +2,6 @@ package panda.rainmaker.database.models;
 
 import org.bson.types.ObjectId;
 import panda.rainmaker.database.GuildDao;
-import panda.rainmaker.util.PermissionMap;
 
 import java.util.*;
 
@@ -30,9 +29,6 @@ public class GuildSettings {
 
     // listName -> messageId
     private Map<String, String> listToMessageMap;
-
-    // commandName -> PermissionMap
-    private Map<String, PermissionMap> commandPermissions;
 
     public ObjectId get_id() {
         return _id;
@@ -183,32 +179,5 @@ public class GuildSettings {
         }
 
         return String.format("Failed to update %s to %s. [Current value: %s]", field, value, currentValue);
-    }
-
-    public Map<String, PermissionMap> getCommandPermissions() {
-        return commandPermissions;
-    }
-
-    public void setCommandPermissions(Map<String, PermissionMap> commandPermissions) {
-        this.commandPermissions = commandPermissions;
-    }
-
-    public PermissionMap getPermissionsForCommand(String commandName) {
-        if (commandPermissions == null) commandPermissions = new HashMap<>();
-
-        PermissionMap map = commandPermissions.get(commandName);
-        if (map == null) {
-            map = new PermissionMap();
-            commandPermissions.put(commandName, map);
-        }
-
-        return map;
-    }
-
-    public String updatePermissionsForCommand(String commandName, PermissionMap permissionMap) {
-        commandPermissions.put(commandName, permissionMap);
-        boolean updated = GuildDao.saveGuildSettings(this);
-
-        return (updated ? "Successfully" : "Failed to") + " update permissions for " + commandName;
     }
 }

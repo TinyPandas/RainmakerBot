@@ -26,20 +26,12 @@ public class Commands {
         addCommandObject(new SetConfigValueCommand());
         addCommandObject(new ShutdownCommand());
         addCommandObject(new ViewConfigCommand());
-        addCommandObject(new ViewPermissionsCommand());
         addCommandObject(new WikiCommand());
-
-        // Loaded last so all commands exist in list.
-        addCommandObject(new PermissionCommand());
     }
 
     private static void addCommandObject(CommandObject commandObject) {
         System.out.println("Loading " + commandObject.getName());
         loadedCommands.put(commandObject.getName(), commandObject);
-    }
-
-    public static List<String> getCommandNameList() {
-        return new ArrayList<>(loadedCommands.keySet());
     }
 
     public static List<CommandObject> getCommands() {
