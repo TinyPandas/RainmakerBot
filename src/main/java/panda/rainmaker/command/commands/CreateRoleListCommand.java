@@ -12,7 +12,7 @@ import static panda.rainmaker.util.PandaUtil.getStringFromOption;
 public class CreateRoleListCommand extends CommandObject {
 
     public CreateRoleListCommand() {
-        super("create-role-list", "Create a new role list.", true);
+        super("create-role-list", "Create a new role list.");
         addOptionData(OptionDataDefs.LIST.asOptionData());
     }
 

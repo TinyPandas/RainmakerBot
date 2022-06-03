@@ -13,8 +13,6 @@ import static com.mongodb.client.model.Filters.eq;
 
 public class GlobalDao {
 
-    public GlobalDao() {}
-
     public static GlobalSettings retrieveGlobalSettings() {
         MongoDatabase db = BotMongoClient.getDatabase("rainmaker");
         MongoCollection<GlobalSettings> collection = BotMongoClient.getGlobalCollection(db);

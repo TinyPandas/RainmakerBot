@@ -13,7 +13,7 @@ import static panda.rainmaker.util.PandaUtil.getStringFromOption;
 public class SetConfigValueCommand extends CommandObject {
 
     public SetConfigValueCommand() {
-        super("set-config-value", "Updates a config option", true);
+        super("set-config-value", "Updates a config option");
         addOptionData(OptionDataDefs.CONFIG_FIELD.asOptionData()
                 .addChoices(
                         GuildSettings.FIELDS.stream()

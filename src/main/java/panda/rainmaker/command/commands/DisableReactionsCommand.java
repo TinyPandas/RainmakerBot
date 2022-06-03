@@ -19,7 +19,7 @@ import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
 public class DisableReactionsCommand extends CommandObject {
 
     public DisableReactionsCommand() {
-        super("disable-reactions", "Disable a reaction for each message in a channel.", true);
+        super("disable-reactions", "Disable a reaction for each message in a channel.");
         addOptionData(new OptionData(OptionType.CHANNEL, "channel",
                 "The channel to disable on.")
                 .setRequired(true)

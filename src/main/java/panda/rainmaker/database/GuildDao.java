@@ -11,8 +11,7 @@ import static com.mongodb.client.model.Filters.eq;
 
 public class GuildDao {
 
-    // TODO: Implement cache
-    public GuildDao() {}
+    //TODO: Implement cache
 
     public static GuildSettings fetchGuildSettings(String guildId) {
         //TODO: Implement cache

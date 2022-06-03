@@ -8,8 +8,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
-import panda.rainmaker.database.GlobalDao;
-import panda.rainmaker.database.GuildDao;
 import panda.rainmaker.database.models.GlobalSettings;
 import panda.rainmaker.database.models.GuildSettings;
 
@@ -30,17 +28,12 @@ public class BotMongoClient {
     private static String dbUri;
     private static MongoClient mongoClient;
 
-    public BotMongoClient(final String dbUri, final boolean test) throws UnknownHostException {
+    public static void setupClient(final String dbUri, final boolean test) throws UnknownHostException {
         BotMongoClient.dbUri = dbUri;
         isConnected = false;
         isTest = test;
 
         getMongoClient();
-
-        if (mongoClient != null) {
-            new GlobalDao();
-            new GuildDao();
-        }
     }
 
     public static MongoClient getMongoClient() throws UnknownHostException {

@@ -13,10 +13,7 @@ public enum OptionDataDefs {
     USER (OptionType.USER, "user", "The user to interact with.", true),
     REASON (OptionType.STRING, "reason", "The reason for this command.", true),
     CONFIG_FIELD (OptionType.STRING, "field", "The config field to update.", true),
-    CONFIG_VALUE (OptionType.STRING, "value", "The new value to use in the config.", true),
-    PERM_TARGET (OptionType.STRING, "target", "The command to modify permissions for.", true),
-    PERM_ACTION (OptionType.STRING, "action", "The action to take for this permission change.", true),
-    PERM_ENTITY (OptionType.MENTIONABLE, "entity", "The entity (user / role) to apply the permission for.", true);
+    CONFIG_VALUE (OptionType.STRING, "value", "The new value to use in the config.", true);
 
     private final OptionType type;
     private final String name;

@@ -3,12 +3,11 @@ package panda.rainmaker.entity;
 import com.vdurmont.emoji.EmojiParser;
 import net.dv8tion.jda.api.entities.Emote;
 import net.dv8tion.jda.api.entities.Guild;
-import panda.rainmaker.util.ChannelReactionCache;
 
 public class ReactionObject {
 
-    private boolean isEmoji = false;
-    private String value = "";
+    private final boolean isEmoji;
+    private final String value;
 
     public ReactionObject(boolean isEmoji, String value) {
         this.isEmoji = isEmoji;

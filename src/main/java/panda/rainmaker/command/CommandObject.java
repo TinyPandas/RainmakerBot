@@ -15,25 +15,15 @@ public abstract class CommandObject {
     private final String name;
     private final String description;
     private final List<OptionData> optionsDataList;
-    private final boolean isPermissible;
 
     public CommandObject(String name, String description) {
-        this(name, description, new ArrayList<>(), false);
+        this(name, description, new ArrayList<>());
     }
 
     public CommandObject(String name, String description, List<OptionData> optionsDataList) {
-        this(name, description, optionsDataList, false);
-    }
-
-    public CommandObject(String name, String description, boolean isPermissible) {
-        this(name, description, new ArrayList<>(), isPermissible);
-    }
-
-    public CommandObject(String name, String description, List<OptionData> optionsDataList, boolean isPermissible) {
         this.name = name;
         this.description = description;
         this.optionsDataList = optionsDataList;
-        this.isPermissible = isPermissible;
     }
 
     public String getName() {
@@ -42,10 +32,6 @@ public abstract class CommandObject {
 
     public String getDescription() {
         return description;
-    }
-
-    public List<OptionData> getOptionsDataList() {
-        return optionsDataList;
     }
 
     public void addOptionData(OptionData optionData) {
@@ -67,9 +53,5 @@ public abstract class CommandObject {
     public boolean passEvent(SlashCommandInteractionEvent event, String reason, MessageEmbed... embeds) {
         event.getHook().editOriginal(reason).setEmbeds(embeds).queue();
         return true;
-    }
-
-    public boolean getIsPermissible() {
-        return isPermissible;
     }
 }

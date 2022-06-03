@@ -13,7 +13,7 @@ import static panda.rainmaker.util.PandaUtil.getMemberFromSlashCommandEvent;
 public class ViewConfigCommand extends CommandObject {
 
     public ViewConfigCommand() {
-        super("view-config", "View the current config for this guild.", true);
+        super("view-config", "View the current config for this guild.");
     }
 
     @Override

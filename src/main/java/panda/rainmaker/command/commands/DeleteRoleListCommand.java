@@ -13,7 +13,7 @@ import static panda.rainmaker.util.RoleGiverCache.deleteRoleList;
 public class DeleteRoleListCommand extends CommandObject {
 
     public DeleteRoleListCommand() {
-        super("delete-role-list", "Deletes a role list.", true);
+        super("delete-role-list", "Deletes a role list.");
         addOptionData(OptionDataDefs.LIST.asOptionData());
     }
 

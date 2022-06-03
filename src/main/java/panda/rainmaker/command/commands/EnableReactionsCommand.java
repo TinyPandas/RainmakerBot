@@ -19,7 +19,7 @@ import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
 public class EnableReactionsCommand extends CommandObject {
 
     public EnableReactionsCommand() {
-        super("enable-reactions", "Enable a reaction for each message in a channel.", true);
+        super("enable-reactions", "Enable a reaction for each message in a channel.");
         addOptionData(new OptionData(OptionType.CHANNEL, "channel",
                 "The channel to enable on.")
                 .setRequired(true)

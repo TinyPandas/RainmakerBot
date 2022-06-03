@@ -14,7 +14,7 @@ import static panda.rainmaker.util.RoleGiverCache.removeRoleFromList;
 public class RemoveRoleFromListCommand extends CommandObject {
 
     public RemoveRoleFromListCommand() {
-        super("remove-role-from-list", "Remove a role from the specific list.", true);
+        super("remove-role-from-list", "Remove a role from the specific list.");
         addOptionData(OptionDataDefs.LIST.asOptionData());
         addOptionData(OptionDataDefs.ROLE.asOptionData());
     }

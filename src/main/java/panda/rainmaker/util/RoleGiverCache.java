@@ -14,16 +14,6 @@ import java.util.Set;
 
 public class RoleGiverCache {
 
-    public static void setRoleChannelId(GuildSettings guildSettings, String channelId) {
-        guildSettings.setRoleChannelId(channelId);
-        GuildDao.saveGuildSettings(guildSettings);
-    }
-
-    public static boolean isInvalidList(GuildSettings guildSettings, Guild guild, String listName) {
-        System.out.println("Validating: " + listName + " [" + getUID(guild, listName) + "]");
-        return !guildSettings.getListToRoleMap().containsKey(getUID(guild, listName));
-    }
-
     public static void validateList(GuildSettings guildSettings, Guild guild, String listName) throws Exception {
         if (!guildSettings.getListToRoleMap().containsKey(getUID(guild, listName))) {
             throw new Exception(String.format("`%s` does not exist.", listName));
@@ -184,7 +174,7 @@ public class RoleGiverCache {
         return null;
     }
 
-    public static ReactionObject getReactionCacheValue(Guild guild, String reaction) throws Exception {
+    public static ReactionObject getReactionCacheValue(Guild guild, String reaction) {
         List<String> unicodeEmojis = EmojiParser.extractEmojis(reaction);
 
         if (unicodeEmojis.size() > 0) {
@@ -229,6 +219,7 @@ public class RoleGiverCache {
                         String reactionId = guildSettings.getRoleToReactionMap().get(getUID(guild, roleId));
                         System.out.println("RID: " + reactionId);
                         Role role = guild.getRoleById(roleId);
+                        if (role == null) continue;
                         boolean isEmoji = EmojiManager.isEmoji(reactionId);
 
                         builder.append("**=>** React with ");
@@ -242,6 +233,7 @@ public class RoleGiverCache {
                             }
                         } else {
                             Emote emote = guild.getJDA().getEmoteById(reactionId);
+                            if (emote == null) continue;
 
                             builder.append(emote.getAsMention());
 

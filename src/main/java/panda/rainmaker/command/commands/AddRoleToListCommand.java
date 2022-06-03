@@ -16,7 +16,7 @@ import static panda.rainmaker.util.RoleGiverCache.getReactionCacheValue;
 public class AddRoleToListCommand extends CommandObject {
 
     public AddRoleToListCommand() {
-        super("add-role-to-list", "Add a role to the specified list.", true);
+        super("add-role-to-list", "Add a role to the specified list.");
         addOptionData(OptionDataDefs.LIST.asOptionData());
         addOptionData(OptionDataDefs.ROLE.asOptionData());
         addOptionData(OptionDataDefs.EMOTE.asOptionData());

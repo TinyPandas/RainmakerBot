@@ -21,7 +21,7 @@ public class ReactionListener extends ListenerAdapter {
         String messageId = event.getMessageId();
         MessageReaction reaction = event.getReaction();
         MessageReaction.ReactionEmote emote = reaction.getReactionEmote();
-        String emoteId = null;
+        String emoteId;
 
         String guildId = event.getGuild().getId();
         GuildSettings guildSettings = GuildDao.fetchGuildSettings(guildId);
@@ -68,7 +68,7 @@ public class ReactionListener extends ListenerAdapter {
         String messageId = event.getMessageId();
         MessageReaction reaction = event.getReaction();
         MessageReaction.ReactionEmote emote = reaction.getReactionEmote();
-        String emoteId = null;
+        String emoteId;
 
         String guildId = event.getGuild().getId();
         GuildSettings guildSettings = GuildDao.fetchGuildSettings(guildId);

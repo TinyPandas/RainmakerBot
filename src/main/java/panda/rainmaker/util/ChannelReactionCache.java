@@ -23,10 +23,6 @@ public class ChannelReactionCache {
         }
     }
 
-    public static void removeReactionsInChannel(final String channelId) {
-        reactionsInChannels.remove(channelId);
-    }
-
     public static void removeReactionFromChannel(final String channelId, final ReactionObject reaction) {
         if (reaction == null) {
             reactionsInChannels.remove(channelId);

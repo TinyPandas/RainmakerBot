@@ -2,8 +2,8 @@ package panda.rainmaker.http;
 
 public class HttpResult {
 
-    private boolean success;
-    private String message;
+    private final boolean success;
+    private final String message;
 
     public HttpResult(String message, boolean success) {
         this.message = message;

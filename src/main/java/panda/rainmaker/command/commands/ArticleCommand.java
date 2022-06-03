@@ -51,7 +51,7 @@ public class ArticleCommand extends CommandObject {
 
         if (articleResponse == null) {
             try {
-                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<List<ArticleResponseItem>>() { });
+                List<ArticleResponseItem> items = objectMapper.readValue(result.getMessage(), new TypeReference<>() { });
                 System.out.println("Loaded " + items.size() + " articles.");
                 articleResponse = new ArticleResponse();
                 articleResponse.setArticleResponse(items);
