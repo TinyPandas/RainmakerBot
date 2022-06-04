@@ -25,6 +25,7 @@ public class Commands {
         addCommandObject(new RemoveRoleFromListCommand());
         addCommandObject(new SetConfigValueCommand());
         addCommandObject(new ShutdownCommand());
+        addCommandObject(new UpdateRoleList());
         addCommandObject(new ViewConfigCommand());
         addCommandObject(new WikiCommand());
     }

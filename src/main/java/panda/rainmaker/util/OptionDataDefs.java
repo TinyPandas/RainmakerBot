@@ -6,7 +6,7 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import java.util.HashMap;
 
 public enum OptionDataDefs {
-    ROLE (OptionType.STRING, "role", "The role to interact with.", true),
+    ROLE (OptionType.ROLE, "role", "The role to interact with.", true),
     EMOTE (OptionType.STRING, "emote", "The emote to interact with.", true),
     LIST (OptionType.STRING, "list", "The list to interact with.", true),
     CHANNEL (OptionType.CHANNEL, "channel", "The channel to interact with.", true),

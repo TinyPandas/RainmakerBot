@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class RoleGiverCache {
 
@@ -115,6 +116,35 @@ public class RoleGiverCache {
         GuildDao.saveGuildSettings(guildSettings);
         updateMessage(guildSettings, guild, listName);
         return "Successfully removed " + role.getAsMention() + " from " + listName;
+    }
+
+    public static String updateRoleList(GuildSettings guildSettings, Guild guild, String listName) {
+        String listUID = getUID(guild, listName);
+        Set<String> roleList = getRolesForList(guildSettings, listUID);
+        List<String> invalidRoles = roleList.stream()
+                .filter(roleId -> guild.getRoleById(roleId) != null)
+                .collect(Collectors.toList());
+
+        if (invalidRoles.size() > 0) {
+            Map<String, String> roleToReactionMap = guildSettings.getRoleToReactionMap();
+            Map<String, String> reactionToRoleMap = guildSettings.getReactionToRoleMap();
+
+            invalidRoles.forEach(roleId -> {
+                String reactionId = roleToReactionMap.remove(getUID(guild, roleId));
+                reactionToRoleMap.remove(getUID(guild, getUID(listName, reactionId)));
+                roleList.remove(roleId);
+            });
+
+            guildSettings.setRoleToReactionMap(roleToReactionMap);
+            guildSettings.setReactionToRoleMap(reactionToRoleMap);
+            guildSettings.getListToRoleMap().put(listUID, roleList);
+
+            GuildDao.saveGuildSettings(guildSettings);
+            updateMessage(guildSettings, guild, listName);
+            return "Successfully updated " + listName + ".";
+        }
+
+        return "No changes were needed.";
     }
 
     public static String deleteRoleList(GuildSettings guildSettings, Guild guild, String listName) {
