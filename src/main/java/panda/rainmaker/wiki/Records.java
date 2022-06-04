@@ -1,10 +1,10 @@
 package panda.rainmaker.wiki;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Records{
 
@@ -79,14 +79,25 @@ public class Records{
 	public Map<String, RecordItem> getFirstOfEach() {
 		Map<String, RecordItem> firstOfEach = new HashMap<>();
 
-		firstOfEach.put("API Reference", apiReference.get(0));
-		firstOfEach.put("Articles", articles.get(0));
+		if (apiReference.size() > 0)
+			firstOfEach.put("API Reference", apiReference.get(0));
+
+		if (articles.size() > 0)
+			firstOfEach.put("Articles", articles.get(0));
+
 		// Extended
-		firstOfEach.put("Learn Roblox", learnRoblox.get(0));
-		firstOfEach.put("Recipes", recipes.get(0));
+		if (learnRoblox.size() > 0)
+			firstOfEach.put("Learn Roblox", learnRoblox.get(0));
+
+		if (recipes.size() > 0)
+			firstOfEach.put("Recipes", recipes.get(0));
+
 		// Extended
-		firstOfEach.put("Resources", resources.get(0));
-		firstOfEach.put("Videos", videos.get(0));
+		if (resources.size() > 0)
+			firstOfEach.put("Resources", resources.get(0));
+
+		if (videos.size() > 0)
+			firstOfEach.put("Videos", videos.get(0));
 
 		return firstOfEach;
 	}

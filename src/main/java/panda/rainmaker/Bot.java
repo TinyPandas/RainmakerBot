@@ -105,7 +105,7 @@ public class Bot {
             // bandwidth if chunking is disabled.
             .setLargeThreshold(50)
             // Set Activity to display the version.
-            .setActivity(Activity.playing("v0.11_alpha"));
+            .setActivity(Activity.playing("v0.12_alpha"));
     }
 
     private static void connectDb(final String dbURI, final boolean test) throws UnknownHostException {
