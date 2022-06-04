@@ -122,14 +122,17 @@ public class RoleGiverCache {
         String listUID = getUID(guild, listName);
         Set<String> roleList = getRolesForList(guildSettings, listUID);
         List<String> invalidRoles = roleList.stream()
-                .filter(roleId -> guild.getRoleById(roleId) != null)
+                .filter(roleId -> guild.getRoleById(roleId) == null)
                 .collect(Collectors.toList());
+
+        System.out.println(invalidRoles);
 
         if (invalidRoles.size() > 0) {
             Map<String, String> roleToReactionMap = guildSettings.getRoleToReactionMap();
             Map<String, String> reactionToRoleMap = guildSettings.getReactionToRoleMap();
 
             invalidRoles.forEach(roleId -> {
+                System.out.println("Removing " + roleId);
                 String reactionId = roleToReactionMap.remove(getUID(guild, roleId));
                 reactionToRoleMap.remove(getUID(guild, getUID(listName, reactionId)));
                 roleList.remove(roleId);
